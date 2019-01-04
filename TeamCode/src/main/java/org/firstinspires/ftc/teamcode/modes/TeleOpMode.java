@@ -9,6 +9,7 @@ import org.firstinspires.ftc.teamcode.components.Controller;
 import org.firstinspires.ftc.teamcode.components.DriveLocalizer;
 import org.firstinspires.ftc.teamcode.components.Latch;
 import org.firstinspires.ftc.teamcode.components.PoseManager;
+import org.firstinspires.ftc.teamcode.util.Inches;
 import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.util.Vector2;
 
@@ -118,6 +119,26 @@ public class TeleOpMode extends OpMode {
             );
         }
 
+        double bucketTargetXVelocityFromTriggers = (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS;
+
+        double bucketLocalizerTargetZVelocity = (-bucketLocalizer.getPosition().getZ()) * BUCKET_Z_POSITION_CORRECTION_FACTOR;
+        telemetry.addLine("bucketLocalizerTargetZVelocity : " + Inches.toString(bucketLocalizerTargetZVelocity));
+
+        bucketLocalizer.bucket.setTargetVelocity(new Vector2(bucketTargetXVelocityFromTriggers, bucketLocalizerTargetZVelocity));
+
+        if (controller1.isLeftBumperDown()) {
+            bucketTargetRotationAmount = 1.0;
+        } else if (controller1.isRightBumperDown()) {
+            bucketTargetRotationAmount = 0.4;
+        } else if (controller1.isAButtonDown()) {
+            bucketTargetRotationAmount = 0.6;
+        } else if (controller1.isBButtonDown()) {
+            bucketTargetRotationAmount = 0.0;
+        }
+
+        bucketLocalizer.bucket.setTargetRotationAmountVelocity((bucketTargetRotationAmount - bucketLocalizer.bucket.getRotationAmount()) * BUCKET_ROTATION_AMOUNT_CORRECTION_FACTOR);
+
+        /*
         Vector2 bucketLocalizerTargetXYVelocityFromJoystick = controller1.getRightJoystickPosition().mul(Range.scale(
                 controller1.getLeftTriggerPosition() + controller1.getRightTriggerPosition(),
                 0.0, 2.0,
@@ -130,16 +151,20 @@ public class TeleOpMode extends OpMode {
 
         double bucketLocalizerTargetZVelocity = (bucketLocalizerTargetZPosition - bucketLocalizer.getPosition().getZ()) * BUCKET_Z_POSITION_CORRECTION_FACTOR;
 
+        telemetry.addData("bucketLocalizerTargetZVelocity" , bucketLocalizerTargetZVelocity);
+
         bucketLocalizer.setTargetVelocity(
                 bucketLocalizerTargetXYVelocityFromJoystick.add(
                         new Vector2(bucketTargetXVelocityFromTriggers, 0.0).addRotation(driveLocalizer.getRotation())
                 ).appendZ(bucketLocalizerTargetZVelocity)
         );
 
-        bucketLocalizer.bucket.slide.setTargetVelocity(bucketLocalizer.bucket.slide.getTargetVelocity()
-                + (controller1.isRightBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
-                - (controller1.isLeftBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
-        );
+        if (controller1.isRightBumperDown() || controller1.isLeftBumperDown()) {
+            bucketLocalizer.bucket.slide.setTargetVelocity(
+                    (controller1.isRightBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
+                            - (controller1.isLeftBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
+            );
+        }
 
         if (controller1.isLeftBumperDown()) {
             bucketTargetRotationAmount = 1.0;
@@ -151,7 +176,7 @@ public class TeleOpMode extends OpMode {
             bucketTargetRotationAmount = 0.0;
         }
 
-        bucketLocalizer.bucket.setTargetRotationAmountVelocity(bucketTargetRotationAmount);
+        bucketLocalizer.bucket.setTargetRotationAmountVelocity((bucketTargetRotationAmount - bucketLocalizer.bucket.getRotationAmount()) * BUCKET_ROTATION_AMOUNT_CORRECTION_FACTOR);
 
 
 

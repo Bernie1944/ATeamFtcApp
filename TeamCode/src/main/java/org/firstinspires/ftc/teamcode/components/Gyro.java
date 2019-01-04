@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.util.Degrees;
 // Simplifies using a Modern Robotics internalGyro to read the z-axis
 public class Gyro extends Component {
     // In degrees per second of how internalGyro's rotation velocity reading is off from what it should actually be
-    private static final double INTERNAL_GYRO_ROTATION_VELOCITY_ERROR = 0.081818;
+    private static final double INTERNAL_GYRO_ROTATION_VELOCITY_ERROR = 0.0; //0.081818;
 
     // Ftc-provided class for using MR gyro
     private final ModernRoboticsI2cGyro internalGyro;
