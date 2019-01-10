@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import java.util.Locale;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -20,89 +19,11 @@ public class BucketLocalizer extends Component {
     // Need access to get robots orientation relative to playing field
     private final DriveLocalizer driveLocalizer;
 
-    // driveLocalizer and bucket states may be modified
+    // driveLocalizer and reverseSlideLine states may be modified
     public BucketLocalizer(Telemetry telemetry, HardwareMap hardwareMap, DriveLocalizer driveLocalizer) {
         super(telemetry, hardwareMap);
         this.driveLocalizer = driveLocalizer;
         this.bucket = new Bucket(telemetry, hardwareMap);
-    }
-
-    // In inches per second of front bottom lip of harvester relative to playing field
-    // Positive x-axis is to the right of the driving team, positive y-axis is to the front of the driving team, and positive z-axis is up
-    public Vector3 getTargetVelocity() {
-        Vector2 horizontalTargetVelocity = new Vector2(
-                bucket.getTargetVelocity().getX(),
-                Degrees.toRadians(driveLocalizer.getTargetRotationVelocity()) * bucket.getPosition().getX()
-        ).addRotation(driveLocalizer.getRotation()).add(driveLocalizer.getTargetVelocity());
-
-        return horizontalTargetVelocity.appendZ(bucket.getTargetVelocity().getY());
-    }
-
-    // In units (see getRotationAmount()) per second
-    public double getTargetRotationAmountVelocity() {
-        return bucket.getTargetRotationAmountVelocity();
-    }
-
-    // In inches per second of front bottom lip of harvester relative to playing field
-    // Positive x-axis is to the right of the driving team, positive y-axis is to the front of the driving team, and positive z-axis is up
-    // This method will set bucket target velocity and driveLocalizer target rotation velocity and may modify driveLocalizer target velocity
-    // It should not move harvester the whole way through the center of the robot to the opposite side (bucket x position should not change signs)
-    public void setTargetVelocity(Vector3 targetVelocity) {
-        // Target velocity relative to robot
-        // X-axis is under most circumstances (explained below) target bucket x velocity
-        // Y-axis is related to driveLocalizer target rotation velocity
-        Vector2 horizontalRelativeTargetVelocity = targetVelocity.getXY().sub(driveLocalizer.getTargetVelocity()).subRotation(driveLocalizer.getRotation());
-
-        // As harvester arm position gets close to 0.0 harvester's side-to-side motion becomes more and more constrained,
-        // making the calculations below produce increasingly larger driveLocalizer target rotation velocity values, going to infinity or NaN
-        // To avoid these extremely large values, allowedBucketXPosition is not allowed to be smaller than SMALLEST_HARVESTER_ARM_X_POSITION
-        double allowedBucketXPosition;
-        if (Math.abs(bucket.getPosition().getX()) >= SMALLEST_HARVESTER_ARM_X_POSITION) {
-            allowedBucketXPosition = bucket.getPosition().getX();
-        } else if (bucket.getPosition().getX() < 0.0) {
-            allowedBucketXPosition = -SMALLEST_HARVESTER_ARM_X_POSITION;
-        } else {
-            allowedBucketXPosition = SMALLEST_HARVESTER_ARM_X_POSITION;
-        }
-
-        if (
-                Math.abs(bucket.getPosition().getX()) >= SMALLEST_HARVESTER_ARM_X_POSITION ||
-                        (bucket.getPosition().getX() < 0.0 && horizontalRelativeTargetVelocity.getX() < 0.0) ||
-                        (bucket.getPosition().getX() >= 0.0 && horizontalRelativeTargetVelocity.getX() > 0.0)
-                ) {
-            // bucket x position is either not smaller than SMALLEST_HARVESTER_ARM_X_POSITION or is going to be moving out of SMALLEST_HARVESTER_ARM_X_POSITION,
-            // so no special considerations need to be made about keeping the harvester from moving through the center of the robot to the opposite side
-
-            bucket.setTargetVelocity(new Vector2(horizontalRelativeTargetVelocity.getX(), targetVelocity.getZ()));
-
-            Vector2 driveLocalizerAdditionalTargetVelocity =
-                    ((horizontalRelativeTargetVelocity.getX() < 0.0 && bucket.slide.isAtMinPosition()) ||
-                            (horizontalRelativeTargetVelocity.getX() > 0.0 && bucket.slide.isAtMaxPosition())) ?
-                    new Vector2(horizontalRelativeTargetVelocity.getX() - bucket.getTargetVelocity().getX(), 0.0).addRotation(driveLocalizer.getRotation()) :
-                            Vector2.ZERO;
-
-            driveLocalizer.setTargetVelocityAndTargetRotationVelocity(
-                    driveLocalizer.getTargetVelocity().add(driveLocalizerAdditionalTargetVelocity),
-                    Degrees.fromRadians(horizontalRelativeTargetVelocity.getY() / allowedBucketXPosition)
-            );
-        } else {
-            // bucket x position would be moving into of SMALLEST_HARVESTER_ARM_X_POSITION,
-            // so special consideration needs to be made to keep harvester from going through center of robot to the other side
-
-            // First, don't run bucket x position any farther into SMALLEST_HARVESTER_ARM_X_POSITION
-            bucket.setTargetVelocity(new Vector2(0.0, targetVelocity.getZ()));
-
-            // Because horizontalRelativeTargetVelocity x was not used to set the target velocity of bucket,
-            // instead of ignoring it, add its magnitude to horizontalRelativeTargetVelocity y
-            // This is important because it will keep the harvester from getting "stuck" when targetVelocity is directing the harvester toward the opposite side of the robot
-            double horizontalRelativeTargetVelocityXContributionToY =
-                    horizontalRelativeTargetVelocity.getY() < 0.0 ? -Math.abs(horizontalRelativeTargetVelocity.getX()) : Math.abs(horizontalRelativeTargetVelocity.getX());
-
-            driveLocalizer.setTargetVelocityAndTargetRotationVelocity(
-                    driveLocalizer.getTargetVelocity(),
-                    Degrees.fromRadians((horizontalRelativeTargetVelocity.getY() + horizontalRelativeTargetVelocityXContributionToY) / allowedBucketXPosition)
-            );
-        }
     }
 
     // In inches of front bottom lip of harvester relative to center of playing field
@@ -141,19 +62,77 @@ public class BucketLocalizer extends Component {
         return horizontalAcceleration.appendZ(bucket.getAcceleration().getY());
     }
 
-    // Should be around [0, 1] with 0 or lower indicating the bucket is fully lowered and 1 or higher indicating the bucket is fully raised
-    public double getRotationAmount() {
-        return bucket.getRotationAmount();
+    // In inches per second of front bottom lip of harvester relative to playing field
+    // Positive x-axis is to the right of the driving team, positive y-axis is to the front of the driving team, and positive z-axis is up
+    public Vector3 getTargetVelocity() {
+        Vector2 horizontalTargetVelocity = new Vector2(
+                bucket.getTargetVelocity().getX(),
+                Degrees.toRadians(driveLocalizer.getTargetRotationVelocity()) * bucket.getPosition().getX()
+        ).addRotation(driveLocalizer.getRotation()).add(driveLocalizer.getTargetVelocity());
+
+        return horizontalTargetVelocity.appendZ(bucket.getTargetVelocity().getY());
     }
 
-    // In units (see getRotationAmount()) per second
-    public double getRotationAmountVelocity() {
-        return bucket.getRotationAmountVelocity();
-    }
+    // In inches per second of front bottom lip of harvester relative to playing field
+    // Positive x-axis is to the right of the driving team, positive y-axis is to the front of the driving team, and positive z-axis is up
+    // This method will set reverseSlideLine target velocity and driveLocalizer target rotation velocity and may modify driveLocalizer target velocity
+    // It should not move harvester the whole way through the center of the robot to the opposite side (reverseSlideLine x position should not change signs)
+    public void setTargetVelocity(Vector3 targetVelocity) {
+        // Target velocity relative to robot
+        // X-axis is under most circumstances (explained below) target reverseSlideLine x velocity
+        // Y-axis is related to driveLocalizer target rotation velocity
+        Vector2 horizontalRelativeTargetVelocity = targetVelocity.getXY().sub(driveLocalizer.getTargetVelocity()).subRotation(driveLocalizer.getRotation());
 
-    // In units (see getRotationAmount()) per second per second
-    public double getRotationAmountAcceleration() {
-        return bucket.getRotationAmountAcceleration();
+        // As harvester arm position gets close to 0.0 harvester's side-to-side motion becomes more and more constrained,
+        // making the calculations below produce increasingly larger driveLocalizer target rotation velocity values, going to infinity or NaN
+        // To avoid these extremely large values, allowedBucketXPosition is not allowed to be smaller than SMALLEST_HARVESTER_ARM_X_POSITION
+        double allowedBucketXPosition;
+        if (Math.abs(bucket.getPosition().getX()) >= SMALLEST_HARVESTER_ARM_X_POSITION) {
+            allowedBucketXPosition = bucket.getPosition().getX();
+        } else if (bucket.getPosition().getX() < 0.0) {
+            allowedBucketXPosition = -SMALLEST_HARVESTER_ARM_X_POSITION;
+        } else {
+            allowedBucketXPosition = SMALLEST_HARVESTER_ARM_X_POSITION;
+        }
+
+        if (
+                Math.abs(bucket.getPosition().getX()) >= SMALLEST_HARVESTER_ARM_X_POSITION ||
+                        (bucket.getPosition().getX() < 0.0 && horizontalRelativeTargetVelocity.getX() < 0.0) ||
+                        (bucket.getPosition().getX() >= 0.0 && horizontalRelativeTargetVelocity.getX() > 0.0)
+                ) {
+            // reverseSlideLine x position is either not smaller than SMALLEST_HARVESTER_ARM_X_POSITION or is going to be moving out of SMALLEST_HARVESTER_ARM_X_POSITION,
+            // so no special considerations need to be made about keeping the harvester from moving through the center of the robot to the opposite side
+
+            bucket.setTargetVelocity(new Vector2(horizontalRelativeTargetVelocity.getX(), targetVelocity.getZ()));
+
+            Vector2 driveLocalizerAdditionalTargetVelocity =
+                    ((horizontalRelativeTargetVelocity.getX() < 0.0 && bucket.isArmAtMinPosition()) ||
+                            (horizontalRelativeTargetVelocity.getX() > 0.0 && bucket.isArmAtMaxPosition())) ?
+                    new Vector2(horizontalRelativeTargetVelocity.getX() - bucket.getTargetVelocity().getX(), 0.0).addRotation(driveLocalizer.getRotation()) :
+                            Vector2.ZERO;
+
+            driveLocalizer.setTargetVelocityAndTargetRotationVelocity(
+                    driveLocalizer.getTargetVelocity().add(driveLocalizerAdditionalTargetVelocity),
+                    Degrees.fromRadians(horizontalRelativeTargetVelocity.getY() / allowedBucketXPosition)
+            );
+        } else {
+            // reverseSlideLine x position would be moving into of SMALLEST_HARVESTER_ARM_X_POSITION,
+            // so special consideration needs to be made to keep harvester from going through center of robot to the other side
+
+            // First, don't run reverseSlideLine x position any farther into SMALLEST_HARVESTER_ARM_X_POSITION
+            bucket.setTargetVelocity(new Vector2(0.0, targetVelocity.getZ()));
+
+            // Because horizontalRelativeTargetVelocity x was not used to set the target velocity of reverseSlideLine,
+            // instead of ignoring it, add its magnitude to horizontalRelativeTargetVelocity y
+            // This is important because it will keep the harvester from getting "stuck" when targetVelocity is directing the harvester toward the opposite side of the robot
+            double horizontalRelativeTargetVelocityXContributionToY =
+                    horizontalRelativeTargetVelocity.getY() < 0.0 ? -Math.abs(horizontalRelativeTargetVelocity.getX()) : Math.abs(horizontalRelativeTargetVelocity.getX());
+
+            driveLocalizer.setTargetVelocityAndTargetRotationVelocity(
+                    driveLocalizer.getTargetVelocity(),
+                    Degrees.fromRadians((horizontalRelativeTargetVelocity.getY() + horizontalRelativeTargetVelocityXContributionToY) / allowedBucketXPosition)
+            );
+        }
     }
 
     // Called through Component.update()
@@ -168,10 +147,7 @@ public class BucketLocalizer extends Component {
         return "position :       " + Inches.toString(getPosition()) + "\n" +
                 "targetVelocity : " + Inches.toString(getTargetVelocity()) + "\n" +
                 "velocity :       " + Inches.toString(getVelocity()) + "\n" +
-                "acceleration :   " + Inches.toString(getAcceleration()) + "\n" +
-                "rotationAmount :             " + String.format("%6.2f", getRotationAmount()) + "\n" +
-                "rotationAmountVelocity :     " + String.format("%6.2f", getRotationAmountVelocity()) + "\n" +
-                "rotationAmountAcceleration : " + String.format("%6.2f", getRotationAmountAcceleration());
+                "acceleration :   " + Inches.toString(getAcceleration());
     }
 
     // Returns text verbosely describing state

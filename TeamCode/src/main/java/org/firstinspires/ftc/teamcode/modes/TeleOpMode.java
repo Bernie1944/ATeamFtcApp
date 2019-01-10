@@ -9,11 +9,10 @@ import org.firstinspires.ftc.teamcode.components.Controller;
 import org.firstinspires.ftc.teamcode.components.DriveLocalizer;
 import org.firstinspires.ftc.teamcode.components.Latch;
 import org.firstinspires.ftc.teamcode.components.PoseManager;
-import org.firstinspires.ftc.teamcode.util.Inches;
 import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.util.Vector2;
 
-@TeleOp(name="Tele Op", group="Control")
+@TeleOp(name="Tele Op")
 public class TeleOpMode extends OpMode {
     // In inches per second
     private static final double MAX_LATCH_TARGET_SPEED = 22.0;
@@ -34,7 +33,7 @@ public class TeleOpMode extends OpMode {
     private static final double NAV_ROTATION_TRIM_STEP = 5.0;
 
     // In inches per second when moving with joystick
-    private static final double MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS = 20.0;
+    private static final double MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS = 60.0;
 
     // In inches per second when moving with joystick
     private static final double MAX_HARVESTER_TARGET_HORIZONTAL_SPEED_FROM_JOYSTICK_WITHOUT_DEPRESSED_TRIGGERS = 20.0;
@@ -43,9 +42,10 @@ public class TeleOpMode extends OpMode {
     private static final double MAX_HARVESTER_TARGET_HORIZONTAL_SPEED_FROM_JOYSTICK_WITH_DEPRESSED_TRIGGERS = 20.0;
 
     // In inches per second per inch away from ground (0.0)
-    private static final double BUCKET_Z_POSITION_CORRECTION_FACTOR = 4.0;
+    private static final double BUCKET_Z_POSITION_CORRECTION_FACTOR = 0.25;
 
-    private static final double BUCKET_ROTATION_AMOUNT_CORRECTION_FACTOR = 8.0;
+    private static final double MIN_BUCKET_SLACK_OFF_TARGET_FOR_CORRECTION = 0.05;
+    private static final double BUCKET_SLACK_GAIN = 0.7;
 
     // Min target of joystick
     private static final double CONTROLLER_1_JOYSTICK_MAGNITUDE_DEADZONE = 0.14;
@@ -62,7 +62,7 @@ public class TeleOpMode extends OpMode {
 
     Pose targetPose;
 
-    double bucketTargetRotationAmount = 1.0;
+    double bucketTargetSlack = 1.0;
 
     @Override
     public void init() {
@@ -83,7 +83,10 @@ public class TeleOpMode extends OpMode {
         controller1.update();
         controller2.update();
 
+        telemetry.addLine(bucketLocalizer.bucket.toString());
         telemetry.addLine(toStringVerbose());
+
+        bucketLocalizer.bucket.setTargetArmRotationVelocity(controller1.getRightJoystickPosition().getY() * 4.0);
     }
 
     @Override
@@ -119,26 +122,27 @@ public class TeleOpMode extends OpMode {
             );
         }
 
+        /*
         double bucketTargetXVelocityFromTriggers = (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS;
 
         double bucketLocalizerTargetZVelocity = (-bucketLocalizer.getPosition().getZ()) * BUCKET_Z_POSITION_CORRECTION_FACTOR;
         telemetry.addLine("bucketLocalizerTargetZVelocity : " + Inches.toString(bucketLocalizerTargetZVelocity));
 
-        bucketLocalizer.bucket.setTargetVelocity(new Vector2(bucketTargetXVelocityFromTriggers, bucketLocalizerTargetZVelocity));
+        bucketLocalizer.reverseSlideLine.setTargetVelocity(new Vector2(bucketTargetXVelocityFromTriggers, bucketLocalizerTargetZVelocity));
 
         if (controller1.isLeftBumperDown()) {
-            bucketTargetRotationAmount = 1.0;
+            bucketTargetSlack = 1.0;
         } else if (controller1.isRightBumperDown()) {
-            bucketTargetRotationAmount = 0.4;
+            bucketTargetSlack = 0.4;
         } else if (controller1.isAButtonDown()) {
-            bucketTargetRotationAmount = 0.6;
+            bucketTargetSlack = 0.6;
         } else if (controller1.isBButtonDown()) {
-            bucketTargetRotationAmount = 0.0;
+            bucketTargetSlack = 0.0;
         }
 
-        bucketLocalizer.bucket.setTargetRotationAmountVelocity((bucketTargetRotationAmount - bucketLocalizer.bucket.getRotationAmount()) * BUCKET_ROTATION_AMOUNT_CORRECTION_FACTOR);
+        bucketLocalizer.reverseSlideLine.setTargetRotationAmountVelocity((bucketTargetSlack - bucketLocalizer.reverseSlideLine.getRotationAmount()) * BUCKET_SLACK_GAIN);
+*/
 
-        /*
         Vector2 bucketLocalizerTargetXYVelocityFromJoystick = controller1.getRightJoystickPosition().mul(Range.scale(
                 controller1.getLeftTriggerPosition() + controller1.getRightTriggerPosition(),
                 0.0, 2.0,
@@ -147,7 +151,7 @@ public class TeleOpMode extends OpMode {
 
         double bucketTargetXVelocityFromTriggers = (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS;
 
-        double bucketLocalizerTargetZPosition = bucketLocalizer.bucket.slide.getPosition() > 0.0 ? 0.0 : 48.0;
+        double bucketLocalizerTargetZPosition = bucketLocalizer.bucket.getArmPosition() > 0.0 ? 0.0 : 30.0;
 
         double bucketLocalizerTargetZVelocity = (bucketLocalizerTargetZPosition - bucketLocalizer.getPosition().getZ()) * BUCKET_Z_POSITION_CORRECTION_FACTOR;
 
@@ -160,28 +164,31 @@ public class TeleOpMode extends OpMode {
         );
 
         if (controller1.isRightBumperDown() || controller1.isLeftBumperDown()) {
-            bucketLocalizer.bucket.slide.setTargetVelocity(
+            bucketLocalizer.bucket.setTargetArmVelocity(
                     (controller1.isRightBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
                             - (controller1.isLeftBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
             );
         }
 
         if (controller1.isLeftBumperDown()) {
-            bucketTargetRotationAmount = 1.0;
+            bucketTargetSlack = 1.0;
         } else if (controller1.isRightBumperDown()) {
-            bucketTargetRotationAmount = 0.4;
+            bucketTargetSlack = 0.7;
         } else if (controller1.isAButtonDown()) {
-            bucketTargetRotationAmount = 0.6;
+            bucketTargetSlack = 0.6;
         } else if (controller1.isBButtonDown()) {
-            bucketTargetRotationAmount = 0.0;
+            bucketTargetSlack = 0.0;
         }
 
-        bucketLocalizer.bucket.setTargetRotationAmountVelocity((bucketTargetRotationAmount - bucketLocalizer.bucket.getRotationAmount()) * BUCKET_ROTATION_AMOUNT_CORRECTION_FACTOR);
-
+        if (Math.abs(bucketTargetSlack - bucketLocalizer.bucket.getSlack()) >= MIN_BUCKET_SLACK_OFF_TARGET_FOR_CORRECTION) {
+            bucketLocalizer.bucket.setTargetSlackVelocity((bucketTargetSlack - bucketLocalizer.bucket.getSlack()) * BUCKET_SLACK_GAIN);
+        } else {
+            bucketLocalizer.bucket.setTargetSlackVelocity(0.0);
+        }
 
 
         /*
-        bucketLocalizer.bucket.setTargetVelocityAndTargetRotationAmountVelocity(
+        bucketLocalizer.reverseSlideLine.setTargetVelocityAndTargetRotationAmountVelocity(
                 new Vector2(
                         (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * 24.0,
                         controller1.getLeftJoystickPosition().getY() * 6.0
@@ -199,7 +206,7 @@ public class TeleOpMode extends OpMode {
                 -bucketLocalizer.getPosition().getZ() * BUCKET_Z_POSITION_CORRECTION_FACTOR
         ));
 
-        bucket.setTargetVelocity(bucket.getTargetVelocity().addX(
+        reverseSlideLine.setTargetVelocity(reverseSlideLine.getTargetVelocity().addX(
                 (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS)
         );
 
@@ -245,12 +252,6 @@ public class TeleOpMode extends OpMode {
                 "}\n" +
                 "poseManager {\n" +
                 poseManager.toString() + "\n" +
-                "}\n" +
-                "controller1 {\n" +
-                controller1.toString() + "\n" +
-                "}\n" +
-                "controller2 {\n" +
-                controller2.toString() + "\n" +
                 "}";
     }
 

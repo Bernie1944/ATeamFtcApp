@@ -131,10 +131,10 @@ public class PoseManager extends Component {
     public void setTargetHarvesterPosition(Pose.HarvesterPosition targetHarvesterPosition) {
         if (targetHarvesterPosition != null) {
             /*
-            if (targetHarvesterPosition.armIsBehind && bucket.getPosition().getX() >= 0.0) {
-                bucket.setTargetVelocity(new Vector2(-HARVESTER_ARM_SIDE_CORRECTION_X_SPEED, 0.0));
-            } else if (!targetHarvesterPosition.armIsBehind && bucket.getPosition().getX() < 0.0) {
-                bucket.setTargetVelocity(new Vector2(HARVESTER_ARM_SIDE_CORRECTION_X_SPEED, 0.0));
+            if (targetHarvesterPosition.armIsBehind && reverseSlideLine.getPosition().getX() >= 0.0) {
+                reverseSlideLine.setTargetVelocity(new Vector2(-HARVESTER_ARM_SIDE_CORRECTION_X_SPEED, 0.0));
+            } else if (!targetHarvesterPosition.armIsBehind && reverseSlideLine.getPosition().getX() < 0.0) {
+                reverseSlideLine.setTargetVelocity(new Vector2(HARVESTER_ARM_SIDE_CORRECTION_X_SPEED, 0.0));
             } else {
                 Vector3 relativeTarget = targetHarvesterPosition.target.sub(bucketLocalizer.getPosition());
 

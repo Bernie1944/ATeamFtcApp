@@ -72,7 +72,7 @@ public class Vector3 {
     }
 
     public double getZ() {
-        return y;
+        return z;
     }
 
     public Vector3 withZ(double z) {
