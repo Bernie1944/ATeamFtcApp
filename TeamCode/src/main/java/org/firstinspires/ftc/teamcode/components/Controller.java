@@ -528,7 +528,7 @@ public class Controller extends Component {
     // Returns text describing state
     @Override
     public String toString() {
-        return "leftJoystickPosition :   " + String.format(
+        return "leftJoystickPosition : " + String.format(
                 "(%5.2f, %5.2f) (%5.2f @ %6.1f°)",
                 getLeftJoystickPosition().getX(), getLeftJoystickPosition().getY(), getLeftJoystickPosition().getMagnitude(), getLeftJoystickPosition().getRotation()
         ) + "\n" +
@@ -536,83 +536,83 @@ public class Controller extends Component {
                 "(%5.2f, %5.2f) (%5.2f @ %6.1f°)",
                 getRightJoystickPosition().getX(), getRightJoystickPosition().getY(), getRightJoystickPosition().getMagnitude(), getRightJoystickPosition().getRotation()
         ) + "\n" +
-                "dpadPosition :          " + String.format(
+                "dpadPosition : " + String.format(
                 "(%5.2f, %5.2f) (%5.2f @ %6.1f°)",
                 getDpadPosition().getX(), getDpadPosition().getY(), getDpadPosition().getMagnitude(), getDpadPosition().getRotation()
         ) + "\n" +
-                "leftTriggerPosition :   " + String.format("%4.2f", getLeftTriggerPosition()) + "\n" +
+                "leftTriggerPosition : " + String.format("%4.2f", getLeftTriggerPosition()) + "\n" +
                 "rightJoystickPosition : " + String.format("%4.2f", getRightTriggerPosition()) + "\n" +
-                "leftStickDown :                 " + Boolean.toString(isLeftStickDown()) + "\n" +
-                "rightStickDown :                " + Boolean.toString(isRightStickDown()) + "\n" +
-                "leftTriggerDown :               " + Boolean.toString(isLeftTriggerDown()) + "\n" +
-                "rightTriggerDown :              " + Boolean.toString(isRightTriggerDown()) + "\n" +
-                "leftBumperDown :                " + Boolean.toString(isLeftBumperDown()) + "\n" +
-                "rightBumperDown :               " + Boolean.toString(isRightBumperDown()) + "\n" +
-                "aButtonDown :                   " + Boolean.toString(isAButtonDown()) + "\n" +
-                "bButtonDown :                   " + Boolean.toString(isBButtonDown()) + "\n" +
-                "xButtonDown :                   " + Boolean.toString(isXButtonDown()) + "\n" +
-                "yButtonDown :                   " + Boolean.toString(isYButtonDown()) + "\n" +
-                "backButtonDown :                " + Boolean.toString(isBackButtonDown()) + "\n" +
-                "startButtonDown :               " + Boolean.toString(isStartButtonDown()) + "\n" +
-                "leftStickPressed :              " + Boolean.toString(isLeftStickPressed()) + "\n" +
-                "rightStickPressed :             " + Boolean.toString(isRightStickPressed()) + "\n" +
-                "leftTriggerPressed :            " + Boolean.toString(isLeftTriggerPressed()) + "\n" +
-                "rightTriggerPressed :           " + Boolean.toString(isRightTriggerPressed()) + "\n" +
-                "leftBumperPressed :             " + Boolean.toString(isLeftBumperPressed()) + "\n" +
-                "rightBumperPressed :            " + Boolean.toString(isRightBumperPressed()) + "\n" +
-                "aButtonPressed :                " + Boolean.toString(isAButtonPressed()) + "\n" +
-                "bButtonPressed :                " + Boolean.toString(isBButtonPressed()) + "\n" +
-                "xButtonPressed :                " + Boolean.toString(isXButtonPressed()) + "\n" +
-                "yButtonPressed :                " + Boolean.toString(isYButtonPressed()) + "\n" +
-                "backButtonPressed :             " + Boolean.toString(isBackButtonPressed()) + "\n" +
-                "startButtonPressed :            " + Boolean.toString(isStartButtonPressed()) + "\n" +
-                "leftStickReleased :             " + Boolean.toString(isLeftStickReleased()) + "\n" +
-                "rightStickReleased :            " + Boolean.toString(isRightStickReleased()) + "\n" +
-                "leftTriggerReleased :           " + Boolean.toString(isLeftTriggerReleased()) + "\n" +
-                "rightTriggerReleased :          " + Boolean.toString(isRightTriggerReleased()) + "\n" +
-                "leftBumperReleased :            " + Boolean.toString(isLeftBumperReleased()) + "\n" +
-                "rightBumperReleased :           " + Boolean.toString(isRightBumperReleased()) + "\n" +
-                "aButtonReleased :               " + Boolean.toString(isAButtonReleased()) + "\n" +
-                "bButtonReleased :               " + Boolean.toString(isBButtonReleased()) + "\n" +
-                "xButtonReleased :               " + Boolean.toString(isXButtonReleased()) + "\n" +
-                "yButtonReleased :               " + Boolean.toString(isYButtonReleased()) + "\n" +
-                "backButtonReleased :            " + Boolean.toString(isBackButtonReleased()) + "\n" +
-                "startButtonReleased :           " + Boolean.toString(isStartButtonReleased()) + "\n" +
-                "leftStickToggleOn :             " + Boolean.toString(isLeftStickToggleOn()) + "\n" +
-                "rightStickToggleOn :            " + Boolean.toString(isRightStickToggleOn()) + "\n" +
-                "leftTriggerToggleOn :           " + Boolean.toString(isLeftTriggerToggleOn()) + "\n" +
-                "rightTriggerToggleOn :          " + Boolean.toString(isRightTriggerToggleOn()) + "\n" +
-                "leftBumperToggleOn :            " + Boolean.toString(isLeftBumperToggleOn()) + "\n" +
-                "rightBumperToggleOn :           " + Boolean.toString(isRightBumperToggleOn()) + "\n" +
-                "aButtonToggleOn :               " + Boolean.toString(isAButtonToggleOn()) + "\n" +
-                "bButtonToggleOn :               " + Boolean.toString(isBButtonToggleOn()) + "\n" +
-                "xButtonToggleOn :               " + Boolean.toString(isXButtonToggleOn()) + "\n" +
-                "yButtonToggleOn :               " + Boolean.toString(isYButtonToggleOn()) + "\n" +
-                "backButtonToggleOn :            " + Boolean.toString(isBackButtonToggleOn()) + "\n" +
-                "startButtonToggleOn :           " + Boolean.toString(isStartButtonToggleOn()) + "\n" +
-                "leftStickToggleActivated :      " + Boolean.toString(isLeftStickToggleActivated()) + "\n" +
-                "rightStickToggleActivated :     " + Boolean.toString(isRightStickToggleActivated()) + "\n" +
-                "leftTriggerToggleActivated :    " + Boolean.toString(isLeftTriggerToggleActivated()) + "\n" +
-                "rightTriggerToggleActivated :   " + Boolean.toString(isRightTriggerToggleActivated()) + "\n" +
-                "leftBumperToggleActivated :     " + Boolean.toString(isLeftBumperToggleActivated()) + "\n" +
-                "rightBumperToggleActivated :    " + Boolean.toString(isRightBumperToggleActivated()) + "\n" +
-                "aButtonToggleActivated :        " + Boolean.toString(isAButtonToggleActivated()) + "\n" +
-                "bButtonToggleActivated :        " + Boolean.toString(isBButtonToggleActivated()) + "\n" +
-                "xButtonToggleActivated :        " + Boolean.toString(isXButtonToggleActivated()) + "\n" +
-                "yButtonToggleActivated :        " + Boolean.toString(isYButtonToggleActivated()) + "\n" +
-                "backButtonToggleActivated :     " + Boolean.toString(isBackButtonToggleActivated()) + "\n" +
-                "startButtonToggleActivated :    " + Boolean.toString(isStartButtonToggleActivated()) + "\n" +
-                "leftStickToggleDeactivated :    " + Boolean.toString(isLeftStickToggleDeactivated()) + "\n" +
-                "rightStickToggleDeactivated :   " + Boolean.toString(isRightStickToggleDeactivated()) + "\n" +
-                "leftTriggerToggleDeactivated :  " + Boolean.toString(isLeftTriggerToggleDeactivated()) + "\n" +
+                "leftStickDown : " + Boolean.toString(isLeftStickDown()) + "\n" +
+                "rightStickDown : " + Boolean.toString(isRightStickDown()) + "\n" +
+                "leftTriggerDown : " + Boolean.toString(isLeftTriggerDown()) + "\n" +
+                "rightTriggerDown : " + Boolean.toString(isRightTriggerDown()) + "\n" +
+                "leftBumperDown : " + Boolean.toString(isLeftBumperDown()) + "\n" +
+                "rightBumperDown : " + Boolean.toString(isRightBumperDown()) + "\n" +
+                "aButtonDown : " + Boolean.toString(isAButtonDown()) + "\n" +
+                "bButtonDown : " + Boolean.toString(isBButtonDown()) + "\n" +
+                "xButtonDown : " + Boolean.toString(isXButtonDown()) + "\n" +
+                "yButtonDown : " + Boolean.toString(isYButtonDown()) + "\n" +
+                "backButtonDown : " + Boolean.toString(isBackButtonDown()) + "\n" +
+                "startButtonDown : " + Boolean.toString(isStartButtonDown()) + "\n" +
+                "leftStickPressed : " + Boolean.toString(isLeftStickPressed()) + "\n" +
+                "rightStickPressed : " + Boolean.toString(isRightStickPressed()) + "\n" +
+                "leftTriggerPressed : " + Boolean.toString(isLeftTriggerPressed()) + "\n" +
+                "rightTriggerPressed : " + Boolean.toString(isRightTriggerPressed()) + "\n" +
+                "leftBumperPressed : " + Boolean.toString(isLeftBumperPressed()) + "\n" +
+                "rightBumperPressed : " + Boolean.toString(isRightBumperPressed()) + "\n" +
+                "aButtonPressed : " + Boolean.toString(isAButtonPressed()) + "\n" +
+                "bButtonPressed : " + Boolean.toString(isBButtonPressed()) + "\n" +
+                "xButtonPressed : " + Boolean.toString(isXButtonPressed()) + "\n" +
+                "yButtonPressed : " + Boolean.toString(isYButtonPressed()) + "\n" +
+                "backButtonPressed : " + Boolean.toString(isBackButtonPressed()) + "\n" +
+                "startButtonPressed : " + Boolean.toString(isStartButtonPressed()) + "\n" +
+                "leftStickReleased : " + Boolean.toString(isLeftStickReleased()) + "\n" +
+                "rightStickReleased : " + Boolean.toString(isRightStickReleased()) + "\n" +
+                "leftTriggerReleased : " + Boolean.toString(isLeftTriggerReleased()) + "\n" +
+                "rightTriggerReleased : " + Boolean.toString(isRightTriggerReleased()) + "\n" +
+                "leftBumperReleased : " + Boolean.toString(isLeftBumperReleased()) + "\n" +
+                "rightBumperReleased : " + Boolean.toString(isRightBumperReleased()) + "\n" +
+                "aButtonReleased : " + Boolean.toString(isAButtonReleased()) + "\n" +
+                "bButtonReleased : " + Boolean.toString(isBButtonReleased()) + "\n" +
+                "xButtonReleased : " + Boolean.toString(isXButtonReleased()) + "\n" +
+                "yButtonReleased : " + Boolean.toString(isYButtonReleased()) + "\n" +
+                "backButtonReleased : " + Boolean.toString(isBackButtonReleased()) + "\n" +
+                "startButtonReleased : " + Boolean.toString(isStartButtonReleased()) + "\n" +
+                "leftStickToggleOn : " + Boolean.toString(isLeftStickToggleOn()) + "\n" +
+                "rightStickToggleOn : " + Boolean.toString(isRightStickToggleOn()) + "\n" +
+                "leftTriggerToggleOn : " + Boolean.toString(isLeftTriggerToggleOn()) + "\n" +
+                "rightTriggerToggleOn : " + Boolean.toString(isRightTriggerToggleOn()) + "\n" +
+                "leftBumperToggleOn : " + Boolean.toString(isLeftBumperToggleOn()) + "\n" +
+                "rightBumperToggleOn : " + Boolean.toString(isRightBumperToggleOn()) + "\n" +
+                "aButtonToggleOn : " + Boolean.toString(isAButtonToggleOn()) + "\n" +
+                "bButtonToggleOn : " + Boolean.toString(isBButtonToggleOn()) + "\n" +
+                "xButtonToggleOn : " + Boolean.toString(isXButtonToggleOn()) + "\n" +
+                "yButtonToggleOn : " + Boolean.toString(isYButtonToggleOn()) + "\n" +
+                "backButtonToggleOn : " + Boolean.toString(isBackButtonToggleOn()) + "\n" +
+                "startButtonToggleOn : " + Boolean.toString(isStartButtonToggleOn()) + "\n" +
+                "leftStickToggleActivated : " + Boolean.toString(isLeftStickToggleActivated()) + "\n" +
+                "rightStickToggleActivated : " + Boolean.toString(isRightStickToggleActivated()) + "\n" +
+                "leftTriggerToggleActivated : " + Boolean.toString(isLeftTriggerToggleActivated()) + "\n" +
+                "rightTriggerToggleActivated : " + Boolean.toString(isRightTriggerToggleActivated()) + "\n" +
+                "leftBumperToggleActivated : " + Boolean.toString(isLeftBumperToggleActivated()) + "\n" +
+                "rightBumperToggleActivated : " + Boolean.toString(isRightBumperToggleActivated()) + "\n" +
+                "aButtonToggleActivated : " + Boolean.toString(isAButtonToggleActivated()) + "\n" +
+                "bButtonToggleActivated : " + Boolean.toString(isBButtonToggleActivated()) + "\n" +
+                "xButtonToggleActivated : " + Boolean.toString(isXButtonToggleActivated()) + "\n" +
+                "yButtonToggleActivated : " + Boolean.toString(isYButtonToggleActivated()) + "\n" +
+                "backButtonToggleActivated : " + Boolean.toString(isBackButtonToggleActivated()) + "\n" +
+                "startButtonToggleActivated : " + Boolean.toString(isStartButtonToggleActivated()) + "\n" +
+                "leftStickToggleDeactivated : " + Boolean.toString(isLeftStickToggleDeactivated()) + "\n" +
+                "rightStickToggleDeactivated : " + Boolean.toString(isRightStickToggleDeactivated()) + "\n" +
+                "leftTriggerToggleDeactivated : " + Boolean.toString(isLeftTriggerToggleDeactivated()) + "\n" +
                 "rightTriggerToggleDeactivated : " + Boolean.toString(isRightTriggerToggleDeactivated()) + "\n" +
-                "leftBumperToggleDeactivated :   " + Boolean.toString(isLeftBumperToggleDeactivated()) + "\n" +
-                "rightBumperToggleDeactivated :  " + Boolean.toString(isRightBumperToggleDeactivated()) + "\n" +
-                "aButtonToggleDeactivated :      " + Boolean.toString(isAButtonToggleDeactivated()) + "\n" +
-                "bButtonToggleDeactivated :      " + Boolean.toString(isBButtonToggleDeactivated()) + "\n" +
-                "xButtonToggleDeactivated :      " + Boolean.toString(isXButtonToggleDeactivated()) + "\n" +
-                "yButtonToggleDeactivated :      " + Boolean.toString(isYButtonToggleDeactivated()) + "\n" +
-                "backButtonToggleDeactivated :   " + Boolean.toString(isBackButtonToggleDeactivated()) + "\n" +
-                "startButtonToggleDeactivated :  " + Boolean.toString(isStartButtonToggleDeactivated());
+                "leftBumperToggleDeactivated : " + Boolean.toString(isLeftBumperToggleDeactivated()) + "\n" +
+                "rightBumperToggleDeactivated : " + Boolean.toString(isRightBumperToggleDeactivated()) + "\n" +
+                "aButtonToggleDeactivated : " + Boolean.toString(isAButtonToggleDeactivated()) + "\n" +
+                "bButtonToggleDeactivated : " + Boolean.toString(isBButtonToggleDeactivated()) + "\n" +
+                "xButtonToggleDeactivated : " + Boolean.toString(isXButtonToggleDeactivated()) + "\n" +
+                "yButtonToggleDeactivated : " + Boolean.toString(isYButtonToggleDeactivated()) + "\n" +
+                "backButtonToggleDeactivated : " + Boolean.toString(isBackButtonToggleDeactivated()) + "\n" +
+                "startButtonToggleDeactivated : " + Boolean.toString(isStartButtonToggleDeactivated());
     }
 }

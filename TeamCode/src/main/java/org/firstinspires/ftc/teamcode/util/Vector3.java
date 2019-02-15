@@ -198,6 +198,10 @@ public class Vector3 {
         return withMagnitude(getMagnitude() - magnitude);
     }
 
+    public double getDistanceBetween(Vector3 other) {
+        return sub(other).getMagnitude();
+    }
+
     public Vector3 add(Vector3 other) {
         return new Vector3(x + other.x, y + other.y, z + other.z);
     }
@@ -212,6 +216,11 @@ public class Vector3 {
 
     public Vector3 div(double n) {
         return new Vector3(x / n, y / n, z / n);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        return (object instanceof Vector3) && (x == ((Vector3) object).x) && (y == ((Vector3) object).y) && (z == ((Vector3) object).z);
     }
 
     @Override

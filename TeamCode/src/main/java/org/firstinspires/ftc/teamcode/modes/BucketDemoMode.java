@@ -1,18 +1,9 @@
 package org.firstinspires.ftc.teamcode.modes;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.components.Bucket;
-import org.firstinspires.ftc.teamcode.components.Controller;
-import org.firstinspires.ftc.teamcode.components.Nav;
-import org.firstinspires.ftc.teamcode.components.Latch;
-import org.firstinspires.ftc.teamcode.util.Pose;
-import org.firstinspires.ftc.teamcode.util.Vector2;
-
-@TeleOp(name="Tele Op")
-public class TeleOpMode extends Mode {
+@TeleOp(name="Bucket Demo")
+public class BucketDemoMode extends Mode {
     // In inches per second
     private static final double MAX_NAV_TARGET_SPEED = 22.0;
 
@@ -28,7 +19,7 @@ public class TeleOpMode extends Mode {
     // Amount that pressing gamepad 1 bumpers changes current target
     private static final double NAV_ROTATION_TRIM_STEP = 5.0;
 
-    double bucketTargetSlack = 0.0;
+    double bucketTargetTension = 1.0;
 
     @Override
     public void update() {
@@ -42,26 +33,20 @@ public class TeleOpMode extends Mode {
             nav.setRotation(nav.getRotation() - NAV_ROTATION_TRIM_STEP);
         }
 
-
-
-        /*
         // Set nav rotation to joystick rotation
         if (controller2.isLeftBumperDown() && controller2.isRightBumperDown() && controller2.getRightJoystickPosition().getMagnitude() == 1.0) {
             nav.setRotation(controller2.getRightJoystickPosition().getRotation());
         }
 
-        if (controller1.isLeftBumperDown()) {
-            nav.setTargetVelocities(
-                    controller1.getLeftJoystickPosition().mul(MAX_NAV_TARGET_SPEED),
-                    (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_NAV_TARGET_ROTATION_SPEED_FROM_TRIGGERS
-            );
-        } else {
-            nav.setTargetOrientation(
-                    controller1.getRightJoystickPosition().mul(24.0),
-                    controller1.getDpadPosition().getRotation()
-            );
-        }
-*/
+
+        if (controller1.isAButtonDown()) bucketTargetTension = 1.0;
+        else if (controller1.isBButtonDown()) bucketTargetTension = 0.67;
+        else if (controller1.isYButtonDown()) bucketTargetTension = 0.33;
+        else if (controller1.isXButtonDown()) bucketTargetTension = 0.0;
+
+        bucket.pivotShaft.setPower(controller1.getLeftJoystickPosition().getY());
+        bucket.setPowerAndTargetTension(controller1.getRightJoystickPosition().getY(), bucketTargetTension);
+
 
         /*
         latchDrive.setTargetVelocity(((controller2.isYButtonDown() ? 1.0 : 0.0) - (controller2.isAButtonDown() ? 1.0 : 0.0)) * MAX_LATCH_TARGET_SPEED);

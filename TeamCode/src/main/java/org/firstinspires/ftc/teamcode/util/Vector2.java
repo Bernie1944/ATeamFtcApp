@@ -100,6 +100,10 @@ public class Vector2 {
         return withMagnitude(getMagnitude() - magnitude);
     }
 
+    public double getDistanceBetween(Vector2 other) {
+        return sub(other).getMagnitude();
+    }
+
     // Gets rotation of vector between [-180, 180] starting at positive x axis and going counterclockwise in degrees
     public double getRotation() {
         return Degrees.atan2(y, x);
@@ -156,6 +160,11 @@ public class Vector2 {
 
     public Vector3 appendZ(double z) {
         return new Vector3(x, y, z);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        return (object instanceof Vector2) && (x == ((Vector2) object).x) && (y == ((Vector2) object).y);
     }
 
     @Override
