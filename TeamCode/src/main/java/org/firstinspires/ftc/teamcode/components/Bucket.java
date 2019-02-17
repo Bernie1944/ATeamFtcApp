@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.util.Degrees;
 import org.firstinspires.ftc.teamcode.util.DoubleMap;
-import org.firstinspires.ftc.teamcode.util.Inches;
 import org.firstinspires.ftc.teamcode.util.Vector2;
 
 // Represents bucket
@@ -16,21 +14,24 @@ public class Bucket extends Component {
     private static final String TENSIONER_MOTOR_NAME = "BucketTensioner";
 
     // In revolutions
-    private static final double PIVOT_SHAFT_TRAVEL = 18.5;
+    private static final double PIVOT_SHAFT_TRAVEL = 15.75;
 
     // Between [0, 1]
-    private static final double PIVOT_SHAFT_POWER_DEADZONE = 0.06;
+    private static final double PIVOT_SHAFT_POWER_DEADZONE = 0.07;
 
     // In inches of spool
-    private static final double SLIDE_PULLEY_DIAMETER = 3.1;
+    private static final double SLIDE_PULLEY_DIAMETER = 3.35; //3.37; //3.1;
 
     // In inches of slide starting perpendicularly-to-slide below pivot and going forward parallel to slide to approximate center of bucket
     private static final double INITIAL_SLIDE_POSITION = -3.3;
-    private static final double MIN_SLIDE_POSITION = -64.5;
-    private static final double MAX_SLIDE_POSITION = 51.36; //46.5;
+    private static final double MIN_SLIDE_POSITION = -64.25; //-64.5;
+    private static final double MAX_SLIDE_POSITION = 56.5; //56.6; // 56 + (7 / 8) //51.36; //46.5;
 
     // Between [0, 1]
-    private static final double SLIDE_POWER_DEADZONE = 0.06;
+    private static final double SLIDE_POWER_DEADZONE = 0.09;
+
+    private static final double MIN_SLIDE_POWER_WHILE_TENSIONER_MOVING_TO_MAX_POSITION = -0.1;
+    private static final double MIN_SLIDE_VELOCITY_WHILE_TENSIONER_MOVING_TO_MAX_POSITION = -0.5;
 
     // In revolutions
     private static final double TENSIONER_TRAVEL = 0.5;
@@ -53,10 +54,13 @@ public class Bucket extends Component {
     public final Motor pivotShaft;
 
     // Position in inches starting with bucket below pivot and going forward
-    private final Motor slide;
+    // If slide is set to drive backwards, tensioner's target position will be set to 1.0 (full tension)
+    public final Motor slide;
 
     // Position between [0, 1] with 1.0 being fully taunt
-    private final Motor tensioner;
+    // If slide is set to drive backwards, any attempt to set tensioner's power, braking, target velocity, or target position will be ignored
+    // and tensioner's target position will remain at 1.0 (full tension)
+    public final Motor tensioner;
 
     private static DoubleMap createSlidePositionToPivotShaftPositionMap() {
         DoubleMap map = new DoubleMap();
@@ -64,14 +68,12 @@ public class Bucket extends Component {
         // For lander delivery height
 
         // For ground height
-        map.put(-2.0, 0.0);
-        map.put(0.0, 16.86);
-        map.put(16.5, 16.86);
-        map.put(20.0, 12.49);
-        map.put(30.0, 8.14);
-        map.put(40.0, 6.17);
-        map.put(50.0, 5.08);
-        map.put(51.36, 4.90);
+        map.put(20.860, 0.903);
+        map.put(25.435, 0.701);
+        map.put(34.349, 0.556);
+        map.put(42.575, 0.461);
+        map.put(53.381, 0.382);
+        map.put(56.745, 0.372);
 
         return map;
     }
@@ -84,160 +86,128 @@ public class Bucket extends Component {
                 0.0, 0.0, 1.0
         );
 
-        slide = new Motor(
-                telemetry, hardwareMap, SLIDE_MOTOR_NAME, -SLIDE_PULLEY_DIAMETER * Math.PI, SLIDE_POWER_DEADZONE,
-                INITIAL_SLIDE_POSITION, MIN_SLIDE_POSITION, MAX_SLIDE_POSITION
-        );
+        class SlideMotor extends Motor {
+            private SlideMotor(Telemetry telemetry, HardwareMap hardwareMap) {
+                super(
+                        telemetry, hardwareMap, SLIDE_MOTOR_NAME, -SLIDE_PULLEY_DIAMETER * Math.PI, SLIDE_POWER_DEADZONE,
+                        INITIAL_SLIDE_POSITION, MIN_SLIDE_POSITION, MAX_SLIDE_POSITION
+                );
+            }
 
-        tensioner = new Motor(
-                telemetry, hardwareMap, TENSIONER_MOTOR_NAME, 1.0 / TENSIONER_TRAVEL, 0.0,
-                1.0, 0.0, 1.0
-        );
-    }
+            @Override
+            public void setPower(double power) {
+                if (power < 0.0 && !isPositionAtMin()) {
+                    tensioner.setTargetPosition(1.0);
 
-    // In inches of slide starting below slide pivot
-    public double getMinPosition() {
-        return slide.getMinPosition();
-    }
+                    if (tensioner.isPositionAtMax()) {
+                        super.setPower(power);
+                    } else {
+                        super.setPower(MIN_SLIDE_POWER_WHILE_TENSIONER_MOVING_TO_MAX_POSITION);
+                    }
+                } else {
+                    super.setPower(power);
+                }
+            }
 
-    // In inches of slide starting below slide pivot
-    public double getMaxPosition() {
-        return slide.getMaxPosition();
-    }
+            @Override
+            public void setTargetVelocity(double targetVelocity) {
+                if (targetVelocity < 0.0 && !isPositionAtMin()) {
+                    tensioner.setTargetPosition(1.0);
 
-    // In inches of slide starting below slide pivot
-    public double getPosition() {
-        return slide.getPosition();
-    }
+                    if (tensioner.isPositionAtMax()) {
+                        super.setTargetVelocity(targetVelocity);
+                    } else {
+                        super.setTargetVelocity(MIN_SLIDE_VELOCITY_WHILE_TENSIONER_MOVING_TO_MAX_POSITION);
+                    }
+                } else {
+                    super.setTargetVelocity(targetVelocity);
+                }
+            }
 
-    // In inches of slide starting below slide pivot
-    public boolean isPositionAt(double position) {
-        return slide.isPositionAt(position);
-    }
+            @Override
+            public void setTargetPosition(double targetPosition, double maxSpeed) {
+                super.setTargetPosition(targetPosition, maxSpeed);
 
-    // Returns true if position <= minPosition
-    public boolean isPositionAtMin() {
-        return slide.isPositionAtMin();
-    }
+                if (slide.getTargetPosition() < slide.getPosition() && !slide.isPositionAt(slide.getTargetPosition())) {
+                    tensioner.setTargetPosition(1.0);
+                }
 
-    // Returns true if position >= maxPosition
-    public boolean isPositionAtMax() {
-        return slide.isPositionAtMax();
-    }
+                if (targetPosition < slide.getPosition() && !slide.isPositionAt(targetPosition)) {
+                    tensioner.setTargetPosition(1.0);
 
-    // In inches per second
-    public double getVelocity() {
-        return slide.getVelocity();
-    }
+                    if (tensioner.isPositionAtMax()) {
+                        super.setTargetPosition(targetPosition, maxSpeed);
+                    } else {
+                        super.setTargetPosition(targetPosition, Math.abs(MIN_SLIDE_VELOCITY_WHILE_TENSIONER_MOVING_TO_MAX_POSITION));
+                    }
+                } else {
+                    super.setTargetPosition(targetPosition, maxSpeed);
+                }
+            }
 
-    // In inches per second per second
-    public double getAcceleration() {
-        return slide.getAcceleration();
-    }
-
-    // Between [0, 1] with 1.0 being fully taunt
-    public double getTension() {
-        return tensioner.getPosition();
-    }
-
-    // Between [0, 1] with 1.0 being fully taunt
-    public double getTargetTension() {
-        return tensioner.getTargetPosition();
-    }
-
-    // True if slide has set power and is not running with target velocity or target position
-    public boolean isPowerSet() {
-        return slide.isPowerSet();
-    }
-
-    public double getPower() {
-        return slide.getPower();
-    }
-
-    // power is amount of power output of slide expressed between [-1, 1] (actual voltage varies with battery voltage)
-    // targetTension is between [0, 1] with 0.0 being full tension
-    // If power is negative, targetTension will be ignored and will instead be set to fully taunt
-    public void setPowerAndTargetTension(double power, double targetTension) {
-        slide.setPower(power);
-
-        if (slide.getPower() < 0.0) {
-            tensioner.setTargetPosition(1.0);
-        } else {
-            tensioner.setTargetPosition(targetTension);
+            @Override
+            public void setTargetPosition(double targetPosition) {
+                setTargetPosition(targetPosition, Double.POSITIVE_INFINITY);
+            }
         }
-    }
 
-    public boolean isBraking() {
-        return slide.isBraking();
-    }
+        slide = new SlideMotor(telemetry, hardwareMap);
 
-    // This uses no battery power, and simply connects the motor wires together (the motor is essentially turned into a generator under high load),
-    // making the motor harder to turn than setPower(0.0)
-    // Use setTargetVelocity(0.0) if more turning resistance is needed
-    public void brakeAndSetTargetTension(double targetTension) {
-        slide.brake();
+        class TensionerMotor extends Motor {
+            private TensionerMotor(Telemetry telemetry, HardwareMap hardwareMap) {
+                super(
+                        telemetry, hardwareMap, TENSIONER_MOTOR_NAME, 1.0 / TENSIONER_TRAVEL, 0.0,
+                        1.0, 0.0, 1.0
+                );
+            }
 
-        tensioner.setTargetPosition(targetTension);
-    }
+            private boolean isSlideDrivingBackwards() {
+                return (slide.isPowerSet() && slide.getPower() < 0.0) ||
+                        (slide.isTargetVelocitySet() && slide.getTargetVelocity() < 0.0) ||
+                        (slide.isTargetPositionSet() && slide.getTargetPosition() < slide.getPosition() && !slide.isPositionAt(slide.getTargetPosition()));
+            }
 
-    // True if slide has set target velocity and is not running with power or target position
-    public boolean isTargetVelocitySet() {
-        return slide.isTargetVelocitySet();
-    }
+            @Override
+            public void setPower(double power) {
+                if (!isSlideDrivingBackwards()) {
+                    super.setPower(power);
+                }
+            }
 
-    // In inches per second
-    // If not running with target velocity, will return current velocity
-    public double getTargetVelocity() {
-        return slide.getTargetVelocity();
-    }
+            @Override
+            public void brake() {
+                if (!isSlideDrivingBackwards()) {
+                    super.brake();
+                }
+            }
 
-    // targetVelocity is in inches per second of slide
-    // targetTension is between [0, 1] with 0.0 being full tension
-    // If target velocity is negative, targetTension will be ignored and will instead be set to fully taunt
-    public void setTargetVelocityAndTargetTension(double targetVelocity, double targetTension) {
-        slide.setTargetVelocity(targetVelocity);
+            @Override
+            public void setTargetVelocity(double targetVelocity) {
+                if (!isSlideDrivingBackwards()) {
+                    super.setTargetVelocity(targetVelocity);
+                }
+            }
 
-        if (slide.getTargetVelocity() < 0.0) {
-            tensioner.setTargetPosition(1.0);
-        } else {
-            tensioner.setTargetPosition(targetTension);
+            @Override
+            public void setTargetPosition(double targetPosition, double maxSpeed) {
+                if (!isSlideDrivingBackwards() || targetPosition >= 1.0) {
+                    super.setTargetPosition(targetPosition, maxSpeed);
+                }
+            }
+
+            @Override
+            public void setTargetPosition(double targetPosition) {
+                if (!isSlideDrivingBackwards() || targetPosition >= 1.0) {
+                    super.setTargetPosition(targetPosition);
+                }
+            }
         }
+
+        tensioner = new TensionerMotor(telemetry, hardwareMap);
     }
 
-    // True if slide has set target position and is not running with power or target velocity
-    public boolean isTargetPositionSet() {
-        return slide.isTargetPositionSet();
-    }
-
-    // In inches of slide starting below slide pivot
-    // If not running with target position, will return current position
-    public double getTargetPosition() {
-        return slide.getTargetPosition();
-    }
-
-    // targetPosition is in inches starting below slide pivot and going forward
-    // targetTension is between [0, 1] with 0.0 being full tension
-    // maxSpeed is in inches per second
-    // If target position is behind current position, targetTension will be ignored and will instead be set to fully taunt
-    public void setTargetPositionAndTargetTension(double targetPosition, double targetTension, double maxSpeed) {
-        slide.setTargetPosition(targetPosition, maxSpeed);
-
-        if (slide.getTargetPosition() < slide.getPosition() && !slide.isPositionAt(slide.getTargetPosition())) {
-            tensioner.setTargetPosition(1.0);
-        } else {
-            tensioner.setTargetPosition(targetTension);
-        }
-    }
-
-    // targetPosition is in inches starting below slide pivot and going forward
-    // targetTension is between [0, 1] with 0.0 being full tension
-    // Moves motor as fast as possible to targetPosition
-    // If target position is behind current position, targetTension will be ignored and will instead be set to fully taunt
-    public void setTargetPositionAndTargetTension(double targetPosition, double targetTension) {
-        setTargetPositionAndTargetTension(targetPosition, targetTension, Double.POSITIVE_INFINITY);
-    }
-
-    public boolean isXPositionAt(double xPosition) {
+    // Y-position is inferred from xPosition (See SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP)
+    public boolean isPositionAt(double xPosition) {
         double yPosition = xPosition < 0.0 ? LANDER_DELIVERY_HEIGHT : 0.0;
 
         double slideLength = PIVOT_POSITION.getDistanceBetween(new Vector2(xPosition, yPosition + BUCKET_DISTANCE_BELOW_ARM_PIVOT));
@@ -246,22 +216,44 @@ public class Bucket extends Component {
         return slide.isPositionAt(slidePosition) && pivotShaft.isPositionAt(SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP.get(slidePosition));
     }
 
+    // Target y position is inferred from slide's position (See SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP)
     public void setTargetYPosition() {
         pivotShaft.setTargetPosition(SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP.get(slide.getPosition()));
     }
 
-    public void setTargetXPositionAndYPositionAndTension(double targetXPosition, double targetTension, double maxSlideSpeed) {
+    // Target y-position is inferred from slide's position (See SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP)
+    // This function is not designed to work when bucket is close to being below slide pivot
+    public void setTargetXVelocityAndYPosition(double targetXVelocity) {
+        double targetYPosition = slide.getPosition() < 0.0 ? LANDER_DELIVERY_HEIGHT : 0.0;
+
+        Vector2 position = new Vector2(Degrees.cos(Degrees.asin(targetYPosition / Math.abs(slide.getPosition()))) * slide.getPosition(), targetYPosition);
+
+        Vector2 positionRelativeToPivot = position.sub(PIVOT_POSITION);
+
+        slide.setTargetVelocity(positionRelativeToPivot.div(positionRelativeToPivot.getX()).mul(targetXVelocity).getMagnitude());
+
+        // This uses slide's current position so the slides rotation can be guided throughout it's movement
+        setTargetYPosition();
+    }
+
+    // Target y-position is inferred from targetXPosition (See SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP)
+    // This function is not designed to work when targetXPosition is close to being below slide pivot
+    public void setTargetPosition(double targetXPosition, double maxSlideSpeed) {
         double targetYPosition = targetXPosition < 0.0 ? LANDER_DELIVERY_HEIGHT : 0.0;
 
         double targetSlideLength = PIVOT_POSITION.getDistanceBetween(new Vector2(targetXPosition, targetYPosition + BUCKET_DISTANCE_BELOW_ARM_PIVOT));
 
-        setTargetPositionAndTargetTension(targetXPosition < 0.0 ? -targetSlideLength : targetSlideLength, targetTension, maxSlideSpeed);
+        slide.setTargetPosition(targetXPosition < 0.0 ? -targetSlideLength : targetSlideLength, maxSlideSpeed);
 
+        // This uses slide's current position so the slides rotation can be guided throughout it's movement
         setTargetYPosition();
     }
 
-    public void setTargetXPositionAndYPositionAndTension(double targetXPosition, double targetTension) {
-        setTargetXPositionAndYPositionAndTension(targetXPosition, targetTension, Double.POSITIVE_INFINITY);
+    // Target y-position is inferred from targetXPosition (See SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP)
+    // This function is not designed to work when targetXPosition is close to being below slide pivot
+    // Moves slide as fast as possible
+    public void setTargetPosition(double targetXPosition) {
+        setTargetPosition(targetXPosition, Double.POSITIVE_INFINITY);
     }
 
     // Called through Component.update()

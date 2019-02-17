@@ -28,7 +28,7 @@ public abstract class Mode extends OpMode {
     @Override
     public void init() {
         latch = new Latch(telemetry, hardwareMap);
-        nav = new Nav(telemetry, hardwareMap, new Vector2(0.0, 0.0), 0.0);
+        nav = new Nav(telemetry, hardwareMap);
         bucket = new Bucket(telemetry, hardwareMap);
         controller1 = new Controller(telemetry, hardwareMap, gamepad1, CONTROLLER_1_JOYSTICK_MAGNITUDE_DEADZONE);
         controller2 = new Controller(telemetry, hardwareMap, gamepad2, CONTROLLER_2_JOYSTICK_MAGNITUDE_DEADZONE);

@@ -102,13 +102,12 @@ public class Motor extends Component {
     }
 
     // In units (specified by gearing) starting at initialPosition
-    // This does not loop over so this can be outside of the range [0, 360)
     public double getPosition() {
         return position;
     }
 
     public boolean isPositionAt(double position) {
-        int dcMotorPosition = (int) Math.round((position - initialPosition) / gearing * dcMotor.getMotorType().getTicksPerRev());
+        double dcMotorPosition = Math.round((position - initialPosition) / gearing * dcMotor.getMotorType().getTicksPerRev());
 
         return Math.abs(dcMotorPosition - dcMotor.getCurrentPosition()) <= IS_AT_POSITION_THRESHOLD;
     }

@@ -20,19 +20,18 @@ public class Gyro extends Component {
     private double rotationOffsetFromInternalGyro;
 
     // See getter methods
-    private double rotation;
+    private static double rotation;
     private double angularVelocity;
     private double angularAcceleration = 0.0;
 
-    public Gyro(Telemetry telemetry, HardwareMap hardwareMap, String deviceName, double initialRotation) {
+    public Gyro(Telemetry telemetry, HardwareMap hardwareMap, String deviceName) {
         super(telemetry, hardwareMap);
 
         internalGyro = hardwareMap.get(ModernRoboticsI2cGyro.class, deviceName);
 
         // Set rotationOffsetFromInternalGyro to how far initialRotation is from internalGyro's rotation reading
-        rotationOffsetFromInternalGyro = initialRotation - internalGyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
+        rotationOffsetFromInternalGyro = rotation - internalGyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
 
-        rotation = initialRotation;
         angularVelocity = internalGyro.getAngularVelocity(AngleUnit.DEGREES).zRotationRate - INTERNAL_GYRO_ANGULAR_VELOCITY_ERROR;
     }
 
@@ -45,8 +44,8 @@ public class Gyro extends Component {
     // In degrees going counterclockwise
     // rotation does not have to be looped over, meaning it can be outside a range of 360 degrees
     public void setRotation(double rotation) {
-        rotationOffsetFromInternalGyro += rotation - this.rotation;
-        this.rotation = rotation;
+        rotationOffsetFromInternalGyro += rotation - Gyro.rotation;
+        Gyro.rotation = rotation;
     }
 
     // In degrees per second with positive going counterclockwise

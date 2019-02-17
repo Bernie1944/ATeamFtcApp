@@ -20,7 +20,7 @@ public class ManualTeleOpMode extends OpMode {
         latchDrive = hardwareMap.dcMotor.get("LatchDrive");
         bucketPivotShaft = hardwareMap.dcMotor.get("BucketPivotShaft");
         bucketSlide = hardwareMap.dcMotor.get("BucketSlide");
-        bucketSlideTensioner = hardwareMap.dcMotor.get("BucketSlideTensioner");
+        bucketSlideTensioner = hardwareMap.dcMotor.get("BucketTensioner");
     }
 
     @Override

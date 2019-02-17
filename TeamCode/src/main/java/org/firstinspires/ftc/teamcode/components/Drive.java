@@ -92,6 +92,24 @@ public class Drive extends Component {
         return 1.0 - (velocityAlongWheelAxisesFraction * VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION);
     }
 
+    public boolean arePowersSet() {
+        return flWheel.isPowerSet() && frWheel.isPowerSet() && blWheel.isPowerSet() && brWheel.isPowerSet();
+    }
+
+    public void setPowers(Vector2 power, double angularPower) {
+        // Magnitude between [0, 1]
+        // X-axis is velocity along direction of fl and br wheels
+        // Y-axis is velocity along direction of fr and bl wheels
+        Vector2 powerAlongWheelAxises = power.subRotation(45.0);
+
+        Vector2 maxPowerAlongWheelAxis = powerAlongWheelAxises.withNormalizedMagnitude();
+
+        flWheel.setPower(angularPower + (powerAlongWheelAxises.getY() / Math.abs(maxPowerAlongWheelAxis.getY())));
+        frWheel.setPower(angularPower + (powerAlongWheelAxises.getX() / Math.abs(maxPowerAlongWheelAxis.getX())));
+        blWheel.setPower(angularPower - (powerAlongWheelAxises.getX() / Math.abs(maxPowerAlongWheelAxis.getX())));
+        brWheel.setPower(angularPower - (powerAlongWheelAxises.getY() / Math.abs(maxPowerAlongWheelAxis.getY())));
+    }
+
     // True if drive has set target velocity and angular velocity and is not running to target position and rotation
     public boolean areTargetVelocitiesSet() {
         return flWheel.isTargetVelocitySet() && frWheel.isTargetVelocitySet() && blWheel.isTargetVelocitySet() && brWheel.isTargetVelocitySet();

@@ -24,14 +24,13 @@ public class Nav extends Component {
     private final Gyro gyro;
 
     // See getter method
-    private Vector2 position;
+    private static Vector2 position = Vector2.ZERO;
 
     // initialPosition is in inches relative to center of playing field with positive x-axis to the right of the driving team and positive y-axis to the front of the driving team
-    public Nav(Telemetry telemetry, HardwareMap hardwareMap, Vector2 initialPosition, double initialRotation) {
+    public Nav(Telemetry telemetry, HardwareMap hardwareMap) {
         super(telemetry, hardwareMap);
         this.drive = new Drive(telemetry, hardwareMap);
-        this.gyro = new Gyro(telemetry, hardwareMap, GYRO_NAME, initialRotation);
-        position = initialPosition;
+        this.gyro = new Gyro(telemetry, hardwareMap, GYRO_NAME);
     }
 
     // In inches relative to center of playing field with positive x-axis to the right of the driving team and positive y-axis to the front of the driving team
@@ -40,8 +39,8 @@ public class Nav extends Component {
     }
 
     // In inches relative to center of playing field with positive x-axis to the right of the driving team and positive y-axis to the front of the driving team
-    public void setPosition(Vector2 position) {
-        this.position = position;
+    public static void setPosition(Vector2 position) {
+        Nav.position = position;
     }
 
     // In inches per second with positive x-axis to the right of the driving team and positive y-axis to the front of the driving team

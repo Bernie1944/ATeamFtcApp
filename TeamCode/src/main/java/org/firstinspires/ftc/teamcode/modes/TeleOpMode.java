@@ -13,38 +13,73 @@ import org.firstinspires.ftc.teamcode.util.Vector2;
 
 @TeleOp(name="Tele Op")
 public class TeleOpMode extends Mode {
+    // Amount that pressing gamepad 1 bumpers changes current target
+    private static final double NAV_ROTATION_TRIM_STEP = 5.0;
+
     // In inches per second
     private static final double MAX_NAV_TARGET_SPEED = 22.0;
 
     // In degrees per second when setting target rotation with joystick
-    private static final double MAX_NAV_TARGET_ROTATION_SPEED_FROM_DPAD = 180.0;
+    private static final double MAX_NAV_TARGET_ANGULAR_SPEED_FROM_TRIGGERS = 180.0;
 
-    // In degrees when setting target rotation with joystick
-    private static final double NAV_TARGET_ROTATION_TOLERANCE_WITH_DPAD = 10.0;
+    private static final double NAV_ANGULAR_VELOCITY_FROM_JOYSTICK_GAIN = 2.0;
 
     // In degrees per second when rotating with triggers
-    private static final double MAX_NAV_TARGET_ROTATION_SPEED_FROM_TRIGGERS = 100.0;
-
-    // Amount that pressing gamepad 1 bumpers changes current target
-    private static final double NAV_ROTATION_TRIM_STEP = 5.0;
-
-    double bucketTargetSlack = 0.0;
+    private static final double MIN_BUCKET_SLIDE_POSITION_MAGNITUDE_FOR_DECREASED_DRIVE_ANGULAR_POWER = 8.0;
 
     @Override
     public void update() {
         // Trim nav rotation so robot moves more left
-        if (controller2.isLeftBumperPressed()) {
+        if (controller1.isLeftBumperPressed()) {
             nav.setRotation(nav.getRotation() + NAV_ROTATION_TRIM_STEP);
         }
 
         // Trim nav rotation so robot moves more right
-        if (controller2.isRightBumperPressed()) {
+        if (controller1.isRightBumperPressed()) {
             nav.setRotation(nav.getRotation() - NAV_ROTATION_TRIM_STEP);
         }
 
+        double navTargetAngularVelocityFromTriggers =
+                (controller1.getLeftTriggerPosition() - controller1.getRightTriggerPosition() - controller2.getLeftJoystickPosition().getX()) *
+                MAX_NAV_TARGET_ANGULAR_SPEED_FROM_TRIGGERS;
 
+        double navTargetAngularVelocityFromJoystick = (controller1.getRightJoystickPosition().getMagnitude() > 0.5) ?
+            (controller1.getRightJoystickPosition().getRotation() - nav.getRotation()) * NAV_ANGULAR_VELOCITY_FROM_JOYSTICK_GAIN :
+                0.0;
+
+        nav.setTargetVelocities(
+                controller1.getLeftJoystickPosition().mul(MAX_NAV_TARGET_SPEED),
+                navTargetAngularVelocityFromTriggers + navTargetAngularVelocityFromJoystick
+        );
+
+        bucket.slide.setPower(controller2.getRightTriggerPosition() - controller2.getLeftTriggerPosition());
+
+        if (controller2.isYButtonToggleOn()) {
+            bucket.pivotShaft.setPower(controller2.getRightJoystickPosition().getY());
+        } else {
+            bucket.setTargetYPosition();
+        }
+
+        if (!controller2.isYButtonToggleOn() && bucket.slide.getPosition() > 16.0) {
+            bucket.tensioner.setTargetPosition(Range.scale(bucket.slide.getPosition(), 16.0, bucket.slide.getMaxPosition(), 0.67, 0.33));
+        } else if (controller2.isAButtonDown()) {
+            bucket.tensioner.setTargetPosition(0.67);
+        } else if (controller2.isBButtonDown()) {
+            bucket.tensioner.setTargetPosition(0.33);
+        } else {
+            bucket.tensioner.setTargetPosition(1.0);
+        }
 
         /*
+        if (bucket.slide.getPosition() < MIN_BUCKET_SLIDE_POSITION_MAGNITUDE_FOR_DECREASED_DRIVE_ANGULAR_POWER) {
+            nav.drive.setPowers(controller1.getLeftJoystickPosition(), controller1.getLeftTriggerPosition() - controller1.getRightTriggerPosition());
+        } else {
+            nav.drive.setPowers(
+                    controller1.getLeftJoystickPosition(),
+                    (controller1.getLeftTriggerPosition() - controller1.getRightTriggerPosition()) /
+                            Math.abs(bucket.slide.getPosition() / MIN_BUCKET_SLIDE_POSITION_MAGNITUDE_FOR_DECREASED_DRIVE_ANGULAR_POWER));
+        }
+
         // Set nav rotation to joystick rotation
         if (controller2.isLeftBumperDown() && controller2.isRightBumperDown() && controller2.getRightJoystickPosition().getMagnitude() == 1.0) {
             nav.setRotation(controller2.getRightJoystickPosition().getRotation());
@@ -86,16 +121,16 @@ public class TeleOpMode extends Mode {
         bucketLocalizer.reverseSlideLine.setTargetVelocity(new Vector2(bucketTargetXVelocityFromTriggers, bucketLocalizerTargetZVelocity));
 
         if (controller1.isLeftBumperDown()) {
-            bucketTargetTension = 1.0;
+            bucketTensionerTargetPosition = 1.0;
         } else if (controller1.isRightBumperDown()) {
-            bucketTargetTension = 0.4;
+            bucketTensionerTargetPosition = 0.4;
         } else if (controller1.isAButtonDown()) {
-            bucketTargetTension = 0.6;
+            bucketTensionerTargetPosition = 0.6;
         } else if (controller1.isBButtonDown()) {
-            bucketTargetTension = 0.0;
+            bucketTensionerTargetPosition = 0.0;
         }
 
-        bucketLocalizer.reverseSlideLine.setTargetRotationAmountVelocity((bucketTargetTension - bucketLocalizer.reverseSlideLine.getRotationAmount()) * BUCKET_SLACK_GAIN);
+        bucketLocalizer.reverseSlideLine.setTargetRotationAmountVelocity((bucketTensionerTargetPosition - bucketLocalizer.reverseSlideLine.getRotationAmount()) * BUCKET_SLACK_GAIN);
 
         Vector2 bucketLocalizerTargetXYVelocityFromJoystick = controller1.getRightJoystickPosition().mul(Range.scale(
                 controller1.getLeftTriggerPosition() + controller1.getRightTriggerPosition(),

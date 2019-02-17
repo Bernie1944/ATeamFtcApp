@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode.components;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.ServoController;
-
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 // Controls latch for lowering off of and lifting onto the lander
@@ -28,8 +26,6 @@ public class Latch extends Component {
     private static final double RATCHETING_CATCH_POSITION = 0.6;
     private static final double ENGAGED_CATCH_POSITION = 0.75;
 
-    private static final double POSITION_OVERSHOOT_WHEN_DISENGAGING_SERVO = 0.15;
-
     private final Motor drive;
     private final Servo theCatch;
 
@@ -40,23 +36,6 @@ public class Latch extends Component {
 
         drive = new Motor(telemetry, hardwareMap, DRIVE_MOTOR_NAME, NUM_PINION_TEETH / (RACK_TEETH_PER_CM / 2.54), 0.0, INITIAL_DRIVE_POSITION, MIN_DRIVE_POSITION, MAX_DRIVE_POSITION);
         theCatch = hardwareMap.servo.get(CATCH_SERVO_NAME);
-    }
-
-    public boolean isStopped() {
-        return drive.isBraking() &&
-                ((drive.isPositionAtMax() && theCatch.getController().getPwmStatus() == ServoController.PwmStatus.DISABLED) ||
-                (theCatch.getController().getPwmStatus() == ServoController.PwmStatus.ENABLED && theCatch.getPosition() != DISENGAGED_CATCH_POSITION));
-    }
-
-    public void stop() {
-        drive.brake();
-
-        if (drive.isPositionAtMax()) {
-            theCatch.getController().pwmDisable();
-        } else {
-            theCatch.getController().pwmEnable();
-            theCatch.setPosition(ENGAGED_CATCH_POSITION);
-        }
     }
 
     public boolean isEngaged() {
@@ -80,15 +59,63 @@ public class Latch extends Component {
     public void disengage() {
         theCatch.setPosition(DISENGAGED_CATCH_POSITION);
 
-        if (isDisengaged()) {
-            drive.brake();
-        } else if (catchEngagementAmount > 0.0) {
+        if (catchEngagementAmount > 0.0) {
             drive.setPower(-1.0);
+        } else if (isDisengaged()) {
+            drive.brake();
         } else {
             drive.setTargetPosition(
                     MAX_DRIVE_POSITION,
                     MAX_DRIVE_SPEED_BEFORE_TOUCHDOWN + (DRIVE_SPEED_REDUCTION_RATE_BEFORE_TOUCHDOWN * (MAX_DRIVE_POSITION - drive.getPosition()))
             );
         }
+    }
+
+    public boolean isStopped() {
+        return drive.isBraking();
+    }
+
+    public void stop() {
+        drive.brake();
+
+        if (isDisengaged()) {
+            theCatch.setPosition(DISENGAGED_CATCH_POSITION);
+        } else {
+            theCatch.setPosition(ENGAGED_CATCH_POSITION);
+        }
+    }
+
+    // Called through Component.update()
+    @Override
+    void updateImpl() {
+        double previousDrivePosition = drive.getPosition();
+        drive.update();
+        double deltaDrivePosition = drive.getPosition() - previousDrivePosition;
+
+        if (catchEngagementAmount > 0.0 || theCatch.getPosition() == ENGAGED_CATCH_POSITION || theCatch.getPosition() == RATCHETING_CATCH_POSITION) {
+            catchEngagementAmount -= deltaDrivePosition;
+        }
+
+        if (catchEngagementAmount < 0.0) catchEngagementAmount = 0.0;
+    }
+
+    // Returns text describing state
+    @Override
+    public String toString() {
+        return "engaged : " + Boolean.toString(isEngaged()) + "\n" +
+                "disengaged : " + Boolean.toString(isDisengaged()) + "\n" +
+                "stopped : " + Boolean.toString(isStopped());
+    }
+
+    // Returns text verbosely describing state
+    @Override
+    public String toStringVerbose() {
+        return toString() + "\n" +
+                "drive {\n" +
+                drive.toStringVerbose() + "\n" +
+                "}\n" +
+                "theCatch {\n" +
+                "position : " + String.format("%2.2f", theCatch.getPosition()) + "\n" +
+                "}";
     }
 }
