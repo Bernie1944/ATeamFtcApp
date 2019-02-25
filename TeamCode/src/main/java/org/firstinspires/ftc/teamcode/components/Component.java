@@ -32,7 +32,7 @@ public abstract class Component {
         // There are 1000000000.0 nanoseconds in a second
         double newTime = System.nanoTime() / 1000000000.0;
 
-        // If an updateImpl() has happened, only call overridable update method updateImpl() if change in time since last update
+        // Only call overridable update method updateImpl() if change in time since last update
         // is not so small that division by deltaTime can produce unexpected results such as large numbers, infinity, or NaN
         if (newTime - time >= MIN_DELTA_TIME) {
             deltaTime = newTime - time;

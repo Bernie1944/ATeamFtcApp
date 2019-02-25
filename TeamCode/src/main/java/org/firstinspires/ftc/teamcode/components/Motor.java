@@ -12,7 +12,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Rotation;
 // Note: AndyMark AM-2992 encoder cable 4-pin housing is not keyed for FTC dcMotor controllers. Make sure black cable is towards bottom of dcMotor controller.
 public class Motor extends Component {
     // In motor ticks
-    private static final int IS_AT_POSITION_THRESHOLD = 5;
+    private static final int DEFAULT_IS_AT_POSITION_THRESHOLD_IN_TICKS = 5;
 
     // Ftc-provided class that controls motor
     // Does not provide an easy-to-use interface
@@ -88,6 +88,12 @@ public class Motor extends Component {
     }
 
     // In units (specified by gearing)
+    // The value getSlidePosition() gos to when robot is restarted
+    public double getInitialPosition() {
+        return initialPosition;
+    }
+
+    // In units (specified by gearing)
     // Lower limit that as getPosition() moves beyond setTargetVelocity() will set the target velocity to zero
     // This can be Double.NEGATIVE_INFINITY
     public double getMinPosition() {
@@ -106,20 +112,22 @@ public class Motor extends Component {
         return position;
     }
 
-    public boolean isPositionAt(double position) {
-        double dcMotorPosition = Math.round((position - initialPosition) / gearing * dcMotor.getMotorType().getTicksPerRev());
+    public boolean isPositionAt(double position, double tolerance) {
+        return Math.abs(position - getPosition()) <= tolerance;
+    }
 
-        return Math.abs(dcMotorPosition - dcMotor.getCurrentPosition()) <= IS_AT_POSITION_THRESHOLD;
+    public boolean isPositionAt(double position) {
+        return isPositionAt(position, DEFAULT_IS_AT_POSITION_THRESHOLD_IN_TICKS / dcMotor.getMotorType().getTicksPerRev() * Math.abs(gearing));
     }
 
     // Returns true if position <= minPosition
     public boolean isPositionAtMin() {
-        return isPositionAt(minPosition) || position < minPosition;
+        return isPositionAt(getMinPosition()) || getPosition() < getMinPosition();
     }
 
     // Returns true if position >= maxPosition
     public boolean isPositionAtMax() {
-        return isPositionAt(maxPosition) || position > maxPosition;
+        return isPositionAt(getMaxPosition()) || getPosition() > getMaxPosition();
     }
 
     // In units (specified by gearing) per second
@@ -197,6 +205,11 @@ public class Motor extends Component {
     }
 
     // In units (specified by gearing) per second
+    public double getMaxTargetSpeed() {
+        return Math.abs(dcMotor.getMotorType().getMaxRPM() / 60.0 * gearing);
+    }
+
+    // In units (specified by gearing) per second
     // If not running with target velocity, will return current velocity
     public double getTargetVelocity() {
         if (isTargetVelocitySet()) {
@@ -212,7 +225,8 @@ public class Motor extends Component {
         dcMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         dcMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        if (Double.isNaN(targetVelocity) || (targetVelocity < 0.0 && isPositionAtMin()) || (targetVelocity > 0.0 && isPositionAtMax())) {
+        if (Double.isNaN(targetVelocity) || (targetVelocity > -Double.MIN_NORMAL && targetVelocity < Double.MIN_NORMAL) ||
+                (targetVelocity < 0.0 && isPositionAtMin()) || (targetVelocity > 0.0 && isPositionAtMax())) {
             targetVelocity = 0.0;
         }
 
@@ -228,33 +242,59 @@ public class Motor extends Component {
     // In units (specified by gearing) relative to initialPosition (which can be provided in the constructor)
     // If not running with target position, will return current position
     public double getTargetPosition() {
-        if (dcMotor.getMode() == DcMotor.RunMode.RUN_TO_POSITION) {
+        if (isTargetPositionSet()) {
             return (dcMotor.getTargetPosition() / dcMotor.getMotorType().getTicksPerRev() * gearing) + initialPosition;
         } else {
             return getPosition();
         }
     }
 
+    // In units (specified by gearing) per second
+    // If not running with target position, will return absolute value of getTargetVelocity()
+    public double getMaxSpeedTowardsTargetPosition() {
+        if (isTargetPositionSet()) {
+            // dcMotor.getPower() is expressed as fraction of max supported speed
+            return dcMotor.getPower() * getMaxTargetSpeed();
+        } else {
+            return Math.abs(getTargetVelocity());
+        }
+    }
+
     // targetPosition is in units (specified by gearing) relative to initialPosition (which can be provided in the constructor)
-    // maxSpeed is in units (specified by gearing) per second
-    public void setTargetPosition(double targetPosition, double maxSpeed) {
+    // maxSpeedTowardsTargetPosition is in units (specified by gearing) per second
+    public void setTargetPosition(double targetPosition, double maxSpeedTowardsTargetPosition) {
         dcMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         dcMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        if (maxSpeed < 0.0) maxSpeed = 0.0;
-        double dcMotorPowerThatLimitsSpeed = Math.abs(maxSpeed / gearing * 60.0 / dcMotor.getMotorType().getMaxRPM());
-        if (Double.isNaN(dcMotorPowerThatLimitsSpeed)) dcMotorPowerThatLimitsSpeed = 0.0;
-        else if (dcMotorPowerThatLimitsSpeed > 1.0) dcMotorPowerThatLimitsSpeed = 1.0;
-        dcMotor.setPower(dcMotorPowerThatLimitsSpeed);
+        dcMotor.setPower(maxSpeedTowardsTargetPosition >= Double.MIN_NORMAL ?
+                Range.clip(maxSpeedTowardsTargetPosition / getMaxTargetSpeed(), 0.0, 1.0) : 0.0
+        );
 
         targetPosition = Range.clip(targetPosition, minPosition, maxPosition);
-        dcMotor.setTargetPosition((int) Math.round((targetPosition - initialPosition) / gearing * dcMotor.getMotorType().getTicksPerRev()));
+        dcMotor.setTargetPosition((int) Math.round(
+                (targetPosition - initialPosition) / gearing * dcMotor.getMotorType().getTicksPerRev()
+        ));
     }
 
     // targetPosition is in units (specified by gearing) relative to initialPosition (which can be provided in the constructor)
     // Moves motor as fast as possible to targetPosition
     public void setTargetPosition(double targetPosition) {
         setTargetPosition(targetPosition, Double.POSITIVE_INFINITY);
+    }
+
+    public boolean isDrivingBackward() {
+        return (isPowerSet() && getPower() < 0.0) ||
+                (isTargetVelocitySet() && getTargetVelocity() < 0.0) ||
+                (isTargetPositionSet() && getTargetPosition() < getPosition() && !isPositionAt(getTargetPosition()) && getMaxSpeedTowardsTargetPosition() > 0.0);
+    }
+
+    public boolean isDrivingForward() {
+        return (isPowerSet() && getPower() > 0.0) ||
+                (isTargetVelocitySet() && getTargetVelocity() > 0.0) ||
+                (isTargetPositionSet() && getTargetPosition() > getPosition() && !isPositionAt(getTargetPosition()) && getMaxSpeedTowardsTargetPosition() > 0.0);
+    }
+
+    public boolean isDriving() {
+        return isDrivingBackward() || isDrivingForward();
     }
 
     // pCoefficient is the proportional coefficient used in motor controller PID loop (Ignored if not using a modern robotics motor controller)
@@ -264,7 +304,8 @@ public class Motor extends Component {
         if (dcMotor.getController() instanceof ModernRoboticsUsbDcMotorController) {
             ((ModernRoboticsUsbDcMotorController) dcMotor.getController()).setDifferentialControlLoopCoefficients(
                     dcMotor.getPortNumber(),
-                    new DifferentialControlLoopCoefficients(pCoefficient, iCoefficient, dCoefficient)
+                    // For some reason, DifferentialControlLoopCoefficients.p and .d are negative
+                    new DifferentialControlLoopCoefficients(-pCoefficient, iCoefficient, -dCoefficient)
             );
         }
     }
@@ -272,6 +313,7 @@ public class Motor extends Component {
     // Proportional coefficient used in motor controller PID loop
     public double getPCoefficient() {
         if (dcMotor.getController() instanceof ModernRoboticsUsbDcMotorController) {
+            // For some reason, DifferentialControlLoopCoefficients.p is negative
             return -((ModernRoboticsUsbDcMotorController) dcMotor.getController()).getDifferentialControlLoopCoefficients(dcMotor.getPortNumber()).p;
         } else {
             return 0.0;
@@ -302,6 +344,7 @@ public class Motor extends Component {
     // Derivative coefficient used in motor controller PID loop
     public double getDCoefficient() {
         if (dcMotor.getController() instanceof ModernRoboticsUsbDcMotorController) {
+            // For some reason, DifferentialControlLoopCoefficients.d is negative
             return -((ModernRoboticsUsbDcMotorController) dcMotor.getController()).getDifferentialControlLoopCoefficients(dcMotor.getPortNumber()).d;
         } else {
             return 0.0;
@@ -333,21 +376,27 @@ public class Motor extends Component {
                 "position : " + String.format("%10.3f", getPosition()) + "\n" +
                 "positionAtMin : " + Boolean.toString(isPositionAtMin()) + "\n" +
                 "positionAtMax : " + Boolean.toString(isPositionAtMax()) + "\n" +
+                "maxSpeedTowardsTargetPosition : " + String.format("%10.3f", getMaxSpeedTowardsTargetPosition()) + "\n" +
                 "targetVelocitySet : " + Boolean.toString(isTargetPositionSet()) + "\n" +
                 "targetVelocity : " + String.format("%10.3f", getTargetVelocity()) + "\n" +
                 "velocity : " + String.format("%10.3f", getVelocity()) + "\n" +
                 "acceleration : " + String.format("%10.3f", getAcceleration()) + "\n" +
                 "powerSet : " + Boolean.toString(isPowerSet()) + "\n" +
                 "power : " + String.format("%5.2f", getPower()) + "\n" +
-                "braking : " + Boolean.toString(isBraking());
+                "braking : " + Boolean.toString(isBraking()) + "\n" +
+                "driving : " + Boolean.toString(isDriving()) + "\n" +
+                "drivingBackward : " + Boolean.toString(isDrivingBackward()) + "\n" +
+                "drivingForward : " + Boolean.toString(isDrivingForward());
     }
 
     // Returns text verbosely describing state
     @Override
     public String toStringVerbose() {
         return toString() + "\n" +
+                "initialPosition : " + String.format("%10.3f", getInitialPosition()) + "\n" +
                 "minPosition : " + String.format("%10.3f", getMinPosition()) + "\n" +
                 "maxPosition : " + String.format("%10.3f", getMaxPosition()) + "\n" +
+                "maxTargetSpeed : " + String.format("%10.3f", getMaxTargetSpeed()) + "\n" +
                 "pCoefficient : " + String.format("%8.2f", getPCoefficient()) + "\n" +
                 "iCoefficient : " + String.format("%8.2f", getICoefficient()) + "\n" +
                 "dCoefficient : " + String.format("%8.2f", getDCoefficient());

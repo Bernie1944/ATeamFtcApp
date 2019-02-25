@@ -100,7 +100,7 @@ public class Vector2 {
         return withMagnitude(getMagnitude() - magnitude);
     }
 
-    public double getDistanceBetween(Vector2 other) {
+    public double getDistanceFrom(Vector2 other) {
         return sub(other).getMagnitude();
     }
 
@@ -134,6 +134,10 @@ public class Vector2 {
         return withRotation(getRotation() - rotation);
     }
 
+    public double getRotationFrom(Vector2 other) {
+        return sub(other).getRotation();
+    }
+
     public Vector2 add(Vector2 other) {
         return new Vector2(x + other.x, y + other.y);
     }
@@ -148,18 +152,6 @@ public class Vector2 {
 
     public Vector2 div(double n) {
         return new Vector2(x / n, y / n);
-    }
-
-    public Vector3 appendX(double x) {
-        return new Vector3(x, this.x, this.y);
-    }
-
-    public Vector3 appendY(double y) {
-        return new Vector3(x, y, this.y);
-    }
-
-    public Vector3 appendZ(double z) {
-        return new Vector3(x, y, z);
     }
 
     @Override

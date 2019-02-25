@@ -42,10 +42,10 @@ public class Drive extends Component {
     // 0.0 = no slippage; 1.0 = complete slippage
     private static final double VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION = 0.1;
 
-    private final Motor flWheel;
-    private final Motor frWheel;
-    private final Motor blWheel;
-    private final Motor brWheel;
+    public final Motor flWheel;
+    public final Motor frWheel;
+    public final Motor blWheel;
+    public final Motor brWheel;
 
     public Drive(Telemetry telemetry, HardwareMap hardwareMap) {
         super(telemetry, hardwareMap);
@@ -90,24 +90,6 @@ public class Drive extends Component {
 
         // Return wheel velocity transfer fraction fudge factor
         return 1.0 - (velocityAlongWheelAxisesFraction * VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION);
-    }
-
-    public boolean arePowersSet() {
-        return flWheel.isPowerSet() && frWheel.isPowerSet() && blWheel.isPowerSet() && brWheel.isPowerSet();
-    }
-
-    public void setPowers(Vector2 power, double angularPower) {
-        // Magnitude between [0, 1]
-        // X-axis is velocity along direction of fl and br wheels
-        // Y-axis is velocity along direction of fr and bl wheels
-        Vector2 powerAlongWheelAxises = power.subRotation(45.0);
-
-        Vector2 maxPowerAlongWheelAxis = powerAlongWheelAxises.withNormalizedMagnitude();
-
-        flWheel.setPower(angularPower + (powerAlongWheelAxises.getY() / Math.abs(maxPowerAlongWheelAxis.getY())));
-        frWheel.setPower(angularPower + (powerAlongWheelAxises.getX() / Math.abs(maxPowerAlongWheelAxis.getX())));
-        blWheel.setPower(angularPower - (powerAlongWheelAxises.getX() / Math.abs(maxPowerAlongWheelAxis.getX())));
-        brWheel.setPower(angularPower - (powerAlongWheelAxises.getY() / Math.abs(maxPowerAlongWheelAxis.getY())));
     }
 
     // True if drive has set target velocity and angular velocity and is not running to target position and rotation
@@ -234,106 +216,6 @@ public class Drive extends Component {
         brWheel.setTargetVelocity(brWheelRequestedVelocity * targetFractionOfRequestedVelocity);
     }
 
-    // True if drive has set target position and rotation and is not running with target velocity and angular velocity
-    public boolean isTargetRelativeOrientationSet() {
-        return flWheel.isTargetPositionSet() && frWheel.isTargetPositionSet() && blWheel.isTargetPositionSet() && brWheel.isTargetPositionSet();
-    }
-
-    // In inches
-    public Vector2 getTargetRelativePosition() {
-        double flWheelTargetRelativePosition = flWheel.getTargetPosition() - flWheel.getPosition();
-        double frWheelTargetRelativePosition = frWheel.getTargetPosition() - frWheel.getPosition();
-        double blWheelTargetRelativePosition = blWheel.getTargetPosition() - blWheel.getPosition();
-        double brWheelTargetRelativePosition = brWheel.getTargetPosition() - brWheel.getPosition();
-
-        // In inches
-        // X-axis is velocity along direction of fl and br wheels
-        // Y-axis is velocity along direction of fr and bl wheels
-        Vector2 targetRelativePositionAlongWheelAxises = new Vector2(
-                (frWheelTargetRelativePosition - blWheelTargetRelativePosition) / 2.0,
-                (flWheelTargetRelativePosition - brWheelTargetRelativePosition) / 2.0
-        );
-
-        // If the robot is to drive along one of it's axises,
-        // decrease targetRelativePositionAlongWheelAxises by taking into account VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION to compensate for wheel slippage
-        targetRelativePositionAlongWheelAxises =
-                targetRelativePositionAlongWheelAxises.mul(calculateWheelVelocityTransferFraction(targetRelativePositionAlongWheelAxises.getRotation()));
-
-        // Rotate velocity to be relative to robot's axises
-        return targetRelativePositionAlongWheelAxises.addRotation(45);
-    }
-
-    // In degrees with positive counterclockwise
-    public double getTargetRelativeRotation() {
-        double flWheelTargetRelativePosition = flWheel.getTargetPosition() - flWheel.getPosition();
-        double frWheelTargetRelativePosition = frWheel.getTargetPosition() - frWheel.getPosition();
-        double blWheelTargetRelativePosition = blWheel.getTargetPosition() - blWheel.getPosition();
-        double brWheelTargetRelativePosition = brWheel.getTargetPosition() - brWheel.getPosition();
-
-        // The average positions of the drive motors is what determines the drive's rotation
-        double targetRelativeTangentialPositionOfWheels =
-                (flWheelTargetRelativePosition + frWheelTargetRelativePosition + blWheelTargetRelativePosition + brWheelTargetRelativePosition) / 4.0;
-
-        return Degrees.fromRadians(targetRelativeTangentialPositionOfWheels / WHEEL_BASE_RADIUS);
-    }
-
-    // targetRelativePosition is relative to the robot's rotation, meaning if targetRelativeRotation is nonzero, robot will sweep an arc
-    // (at any point in time moving towards targetRelativePosition relative to robot's rotation)
-    // with arc length equal to targetRelativePosition's magnitude
-    // targetRelativeRotation does not loop over, meaning it can be outside a range of 360 degrees
-    public void setTargetRelativeOrientation(Vector2 targetRelativePosition, double targetRelativeRotation, double maxVelocity, double maxAngularVelocity) {
-        // If maxVelocity or maxAngularVelocity are extremely small, big, or infinity, unexpected results could occur in the math
-        // so constrain them between a small or unachievably high value
-        maxVelocity = Range.clip(maxVelocity, Double.MIN_NORMAL, 1000.0);
-        maxAngularVelocity = Range.clip(maxAngularVelocity, Double.MIN_NORMAL, 1000.0);
-
-        double timeToGetToTargetRelativePositionAtMaxVelocity = targetRelativePosition.getMagnitude() / maxVelocity;
-        double timeToGetToTargetRelativeRotationAtMaxAngularVelocity = Math.abs(targetRelativeRotation) / maxAngularVelocity;
-        double timeToGetToTargetOrientationAtMaxVelocities = Math.max(timeToGetToTargetRelativePositionAtMaxVelocity, timeToGetToTargetRelativeRotationAtMaxAngularVelocity);
-
-        setTargetVelocities(
-                targetRelativePosition.withMagnitude(
-                        maxVelocity * (timeToGetToTargetRelativePositionAtMaxVelocity / timeToGetToTargetOrientationAtMaxVelocities)
-                ),
-                (targetRelativeRotation < 0.0 ? -maxAngularVelocity : maxAngularVelocity) *
-                        (timeToGetToTargetRelativeRotationAtMaxAngularVelocity / timeToGetToTargetOrientationAtMaxVelocities)
-        );
-
-        /*
-        // In inches
-        // X-axis is velocity along direction of fl and br wheels
-        // Y-axis is velocity along direction of fr and bl wheels
-        Vector2 targetRelativePositionAlongWheelAxises = targetRelativePosition.subRotation(45.0);
-
-        // If the robot is to drive along one of it's axises,
-        // increase targetRelativePositionAlongWheelAxises by taking into account VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION to compensate for wheel slippage
-        targetRelativePositionAlongWheelAxises =
-                targetRelativePositionAlongWheelAxises.div(calculateWheelVelocityTransferFraction(targetRelativePositionAlongWheelAxises.getRotation()));
-
-        // The average positions of the drive motors is what determines the drive's rotation
-        double targetRelativeTangentialPositionOfWheels = Degrees.toRadians(targetRelativeRotation) * WHEEL_BASE_RADIUS;
-
-        double flWheelTargetRelativePosition = targetRelativeTangentialPositionOfWheels + targetRelativePositionAlongWheelAxises.getY();
-        double frWheelTargetRelativePosition = targetRelativeTangentialPositionOfWheels + targetRelativePositionAlongWheelAxises.getX();
-        double blWheelTargetRelativePosition = targetRelativeTangentialPositionOfWheels - targetRelativePositionAlongWheelAxises.getX();
-        double brWheelTargetRelativePosition = targetRelativeTangentialPositionOfWheels - targetRelativePositionAlongWheelAxises.getY();
-
-        flWheel.setTargetPosition(flWheel.getPosition() + flWheelTargetRelativePosition, Math.abs(flWheel.getTargetVelocity()));
-        frWheel.setTargetPosition(frWheel.getPosition() + frWheelTargetRelativePosition, Math.abs(frWheel.getTargetVelocity()));
-        blWheel.setTargetPosition(blWheel.getPosition() + blWheelTargetRelativePosition, Math.abs(blWheel.getTargetVelocity()));
-        brWheel.setTargetPosition(brWheel.getPosition() + brWheelTargetRelativePosition, Math.abs(brWheel.getTargetVelocity()));
-        */
-    }
-
-    // targetRelativePosition is relative to the robot's rotation, meaning if targetRelativeRotation is nonzero, robot will sweep an arc
-    // (at any point in time moving towards targetRelativePosition relative to robot's rotation)
-    // with arc length equal to targetRelativePosition's magnitude
-    // targetRelativeRotation does not loop over, meaning it can be outside a range of 360 degrees
-    // Max velocities are infinity
-    public void setTargetRelativeOrientation(Vector2 targetRelativePosition, double targetRelativeRotation) {
-        setTargetRelativeOrientation(targetRelativePosition, targetRelativeRotation, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
-    }
-
     // Called through Component.update()
     @Override
     void updateImpl() {
@@ -346,10 +228,7 @@ public class Drive extends Component {
     // Returns text describing state
     @Override
     public String toString() {
-        return "targetRelativeOrientationSet : " + Boolean.toString(isTargetRelativeOrientationSet()) + "\n" +
-                "targetRelativePosition : " + Inches.toString(getTargetRelativePosition()) + "\n" +
-                "targetRelativeRotation : " + Inches.toString(getTargetRelativeRotation()) + "\n" +
-                "targetVelocitiesSet : " + Boolean.toString(areTargetVelocitiesSet()) + "\n" +
+        return "targetVelocitiesSet : " + Boolean.toString(areTargetVelocitiesSet()) + "\n" +
                 "targetVelocity : " + Inches.toString(getTargetVelocity()) + "\n" +
                 "velocity :       " + Inches.toString(getVelocity()) + "\n" +
                 "targetAngularVelocity : " + Degrees.toString(getTargetAngularVelocity()) + "\n" +

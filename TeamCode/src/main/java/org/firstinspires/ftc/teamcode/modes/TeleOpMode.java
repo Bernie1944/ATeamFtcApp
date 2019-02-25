@@ -1,221 +1,224 @@
 package org.firstinspires.ftc.teamcode.modes;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.components.Bucket;
-import org.firstinspires.ftc.teamcode.components.Controller;
-import org.firstinspires.ftc.teamcode.components.Nav;
-import org.firstinspires.ftc.teamcode.components.Latch;
-import org.firstinspires.ftc.teamcode.util.Pose;
+import org.firstinspires.ftc.teamcode.util.Degrees;
 import org.firstinspires.ftc.teamcode.util.Vector2;
 
 @TeleOp(name="Tele Op")
 public class TeleOpMode extends Mode {
-    // Amount that pressing gamepad 1 bumpers changes current target
-    private static final double NAV_ROTATION_TRIM_STEP = 5.0;
+    // Amount that pressing controller1 bumpers changes current nav rotation
+    private static final double NAV_ROTATION_TRIM_STEP = 9.0;
 
     // In inches per second
     private static final double MAX_NAV_TARGET_SPEED = 22.0;
 
-    // In degrees per second when setting target rotation with joystick
-    private static final double MAX_NAV_TARGET_ANGULAR_SPEED_FROM_TRIGGERS = 180.0;
+    // In degrees per second
+    private static final double MAX_NAV_TARGET_ANGULAR_SPEED = 180.0;
 
-    private static final double NAV_ANGULAR_VELOCITY_FROM_JOYSTICK_GAIN = 2.0;
+    // In degrees per second per degree
+    private static final double NAV_ROTATION_GAIN = 2.0;
 
-    // In degrees per second when rotating with triggers
-    private static final double MIN_BUCKET_SLIDE_POSITION_MAGNITUDE_FOR_DECREASED_DRIVE_ANGULAR_POWER = 8.0;
+    // In inches
+    private static final double MIN_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT = -6.0;
+    private static final double MAX_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT = 8.0;
+
+    // In inches
+    private static final double MAX_DRIVE_WHEEL_TARGET_POSITION_OFFSET_WHEN_ADJUSTING_ROTATION = 2.0;
+    private static final double BUCKET_SLIDE_TARGET_POSITION_OFFSET_WHEN_ADJUSTING_POSITION = 3.0;
+
+    // In inches per second
+    private static final double MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS = 5.0;
+    private static final double BUCKET_SLIDE_MAX_SPEED_WHEN_ADJUSTING_POSITION = 10.0;
+
+    // In inches
+    private static final double BUCKET_SLIDE_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITION = 1.0;
+    private static final double DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS = 1.0;
+
+    private static final double BUCKET_TENSIONER_TARGET_POSITION_FOR_DUMPING_SILVER_MINERALS = 0.67;
+    private static final double BUCKET_TENSIONER_TARGET_POSITION_FOR_DUMPING_GOLD_MINERALS = 0.33;
+    private static final double BUCKET_TENSIONER_TARGET_POSITION_AT_MIN_SLIDE_POSITION_FOR_SCOOPING_MINERALS = 0.67;
+    private static final double BUCKET_TENSIONER_TARGET_POSITION_AT_MAX_SLIDE_POSITION_FOR_SCOOPING_MINERALS = 0.33;
+
+    private double flWheelPositionForDumpingSilverMinerals = 0.0;
+    private double frWheelPositionForDumpingSilverMinerals = 0.0;
+    private double blWheelPositionForDumpingSilverMinerals = 0.0;
+    private double brWheelPositionForDumpingSilverMinerals = 0.0;
+    private double bucketSlidePositionForDumpingSilverMinerals = 0.0;
+
+    private double flWheelPositionForDumpingGoldMinerals = 0.0;
+    private double frWheelPositionForDumpingGoldMinerals = 0.0;
+    private double blWheelPositionForDumpingGoldMinerals = 0.0;
+    private double brWheelPositionForDumpingGoldMinerals = 0.0;
+    private double bucketSlidePositionForDumpingGoldMinerals = 0.0;
 
     @Override
     public void update() {
         // Trim nav rotation so robot moves more left
         if (controller1.isLeftBumperPressed()) {
-            nav.setRotation(nav.getRotation() + NAV_ROTATION_TRIM_STEP);
+            nav.setRotation(nav.getRotation() - NAV_ROTATION_TRIM_STEP);
         }
 
         // Trim nav rotation so robot moves more right
         if (controller1.isRightBumperPressed()) {
-            nav.setRotation(nav.getRotation() - NAV_ROTATION_TRIM_STEP);
+            nav.setRotation(nav.getRotation() + NAV_ROTATION_TRIM_STEP);
         }
 
-        double navTargetAngularVelocityFromTriggers =
-                (controller1.getLeftTriggerPosition() - controller1.getRightTriggerPosition() - controller2.getLeftJoystickPosition().getX()) *
-                MAX_NAV_TARGET_ANGULAR_SPEED_FROM_TRIGGERS;
+        if (controller2.isXButtonDown()) {
+            nav.drive.flWheel.setTargetPosition(flWheelPositionForDumpingSilverMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            nav.drive.frWheel.setTargetPosition(frWheelPositionForDumpingSilverMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            nav.drive.blWheel.setTargetPosition(blWheelPositionForDumpingSilverMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            nav.drive.brWheel.setTargetPosition(brWheelPositionForDumpingSilverMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            bucket.slide.setTargetPosition(bucketSlidePositionForDumpingSilverMinerals);
+            bucket.correctYPosition();
 
-        double navTargetAngularVelocityFromJoystick = (controller1.getRightJoystickPosition().getMagnitude() > 0.5) ?
-            (controller1.getRightJoystickPosition().getRotation() - nav.getRotation()) * NAV_ANGULAR_VELOCITY_FROM_JOYSTICK_GAIN :
-                0.0;
-
-        nav.setTargetVelocities(
-                controller1.getLeftJoystickPosition().mul(MAX_NAV_TARGET_SPEED),
-                navTargetAngularVelocityFromTriggers + navTargetAngularVelocityFromJoystick
-        );
-
-        bucket.slide.setPower(controller2.getRightTriggerPosition() - controller2.getLeftTriggerPosition());
-
-        if (controller2.isYButtonToggleOn()) {
-            bucket.pivotShaft.setPower(controller2.getRightJoystickPosition().getY());
-        } else {
-            bucket.setTargetYPosition();
-        }
-
-        if (!controller2.isYButtonToggleOn() && bucket.slide.getPosition() > 16.0) {
-            bucket.tensioner.setTargetPosition(Range.scale(bucket.slide.getPosition(), 16.0, bucket.slide.getMaxPosition(), 0.67, 0.33));
-        } else if (controller2.isAButtonDown()) {
-            bucket.tensioner.setTargetPosition(0.67);
-        } else if (controller2.isBButtonDown()) {
-            bucket.tensioner.setTargetPosition(0.33);
-        } else {
-            bucket.tensioner.setTargetPosition(1.0);
-        }
-
-        /*
-        if (bucket.slide.getPosition() < MIN_BUCKET_SLIDE_POSITION_MAGNITUDE_FOR_DECREASED_DRIVE_ANGULAR_POWER) {
-            nav.drive.setPowers(controller1.getLeftJoystickPosition(), controller1.getLeftTriggerPosition() - controller1.getRightTriggerPosition());
-        } else {
-            nav.drive.setPowers(
-                    controller1.getLeftJoystickPosition(),
-                    (controller1.getLeftTriggerPosition() - controller1.getRightTriggerPosition()) /
-                            Math.abs(bucket.slide.getPosition() / MIN_BUCKET_SLIDE_POSITION_MAGNITUDE_FOR_DECREASED_DRIVE_ANGULAR_POWER));
-        }
-
-        // Set nav rotation to joystick rotation
-        if (controller2.isLeftBumperDown() && controller2.isRightBumperDown() && controller2.getRightJoystickPosition().getMagnitude() == 1.0) {
-            nav.setRotation(controller2.getRightJoystickPosition().getRotation());
-        }
-
-        if (controller1.isLeftBumperDown()) {
-            nav.setTargetVelocities(
-                    controller1.getLeftJoystickPosition().mul(MAX_NAV_TARGET_SPEED),
-                    (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_NAV_TARGET_ROTATION_SPEED_FROM_TRIGGERS
-            );
-        } else {
-            nav.setTargetOrientation(
-                    controller1.getRightJoystickPosition().mul(24.0),
-                    controller1.getDpadPosition().getRotation()
-            );
-        }
-*/
-
-        /*
-        latchDrive.setTargetVelocity(((controller2.isYButtonDown() ? 1.0 : 0.0) - (controller2.isAButtonDown() ? 1.0 : 0.0)) * MAX_LATCH_TARGET_SPEED);
-
-        if (controller2.isBButtonToggleOn()) {
-            nav.drive.setTargetVelocities(
-                    controller2.getLeftJoystickPosition().mul(MAX_NAV_TARGET_SPEED),
-                    (controller2.getLeftTriggerPosition() - controller2.getRightTriggerPosition()) * MAX_NAV_TARGET_ROTATION_SPEED_FROM_TRIGGERS
-            );
-        } else {
-            nav.setTargetVelocityAndTargetRotationVelocity(
-                    controller2.getLeftJoystickPosition().mul(MAX_NAV_TARGET_SPEED),
-                    (controller2.getLeftTriggerPosition() - controller2.getRightTriggerPosition()) * MAX_NAV_TARGET_ROTATION_SPEED_FROM_TRIGGERS
-            );
-        }
-
-        double bucketTargetXVelocityFromTriggers = (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS;
-
-        double bucketLocalizerTargetZVelocity = (-bucketLocalizer.getSlidePosition().getZ()) * BUCKET_Z_POSITION_CORRECTION_FACTOR;
-        telemetry.addLine("bucketLocalizerTargetZVelocity : " + Inches.toString(bucketLocalizerTargetZVelocity));
-
-        bucketLocalizer.reverseSlideLine.setTargetVelocity(new Vector2(bucketTargetXVelocityFromTriggers, bucketLocalizerTargetZVelocity));
-
-        if (controller1.isLeftBumperDown()) {
-            bucketTensionerTargetPosition = 1.0;
-        } else if (controller1.isRightBumperDown()) {
-            bucketTensionerTargetPosition = 0.4;
-        } else if (controller1.isAButtonDown()) {
-            bucketTensionerTargetPosition = 0.6;
-        } else if (controller1.isBButtonDown()) {
-            bucketTensionerTargetPosition = 0.0;
-        }
-
-        bucketLocalizer.reverseSlideLine.setTargetRotationAmountVelocity((bucketTensionerTargetPosition - bucketLocalizer.reverseSlideLine.getRotationAmount()) * BUCKET_SLACK_GAIN);
-
-        Vector2 bucketLocalizerTargetXYVelocityFromJoystick = controller1.getRightJoystickPosition().mul(Range.scale(
-                controller1.getLeftTriggerPosition() + controller1.getRightTriggerPosition(),
-                0.0, 2.0,
-                MAX_HARVESTER_TARGET_HORIZONTAL_SPEED_FROM_JOYSTICK_WITHOUT_DEPRESSED_TRIGGERS, MAX_HARVESTER_TARGET_HORIZONTAL_SPEED_FROM_JOYSTICK_WITH_DEPRESSED_TRIGGERS
-        ));
-
-        double bucketTargetXVelocityFromTriggers = (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS;
-
-        double bucketLocalizerTargetZPosition = bucketLocalizer.bucket.getArmPosition() > 0.0 ? 0.0 : 30.0;
-
-        double bucketLocalizerTargetZVelocity = (bucketLocalizerTargetZPosition - bucketLocalizer.getPosition().getZ()) * BUCKET_Z_POSITION_CORRECTION_FACTOR;
-
-        telemetry.addData("bucketLocalizerTargetZVelocity" , bucketLocalizerTargetZVelocity);
-
-        bucketLocalizer.setTargetVelocity(
-                bucketLocalizerTargetXYVelocityFromJoystick.add(
-                        new Vector2(bucketTargetXVelocityFromTriggers, 0.0).addRotation(nav.getRotation())
-                ).appendZ(bucketLocalizerTargetZVelocity)
-        );
-
-        if (controller1.isRightBumperDown() || controller1.isLeftBumperDown()) {
-            bucketLocalizer.bucket.setTargetArmVelocity(
-                    (controller1.isRightBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
-                            - (controller1.isLeftBumperDown() ? MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS : 0.0)
-            );
-        }
-
-        if (bucketLocalizer.bucket.getSlack() > 0.05 && (controller1.isLeftTriggerDown() || controller1.isLeftBumperDown())) {
-            bucketLocalizer.bucket.setTargetSlackVelocity(-bucketLocalizer.bucket.getSlack() * BUCKET_SLACK_GAIN);
-        } else if (controller1.isAButtonDown()) {
-            bucketLocalizer.bucket.setTargetSlackVelocity((0.7 - bucketLocalizer.bucket.getSlack()) * BUCKET_SLACK_GAIN);
-        } else if (bucketLocalizer.bucket.getSlack() < 0.95 &&
-                (controller1.isBButtonDown() || ((controller1.isRightTriggerDown() || controller1.isRightBumperDown()) && bucketLocalizer.getPosition().getZ() < 1.0))
-                ) {
-            bucketLocalizer.bucket.setTargetSlackVelocity((1.0 - bucketLocalizer.bucket.getSlack()) * BUCKET_SLACK_GAIN);
-        }
-
-        bucketLocalizer.reverseSlideLine.setTargetVelocityAndTargetRotationAmountVelocity(
-                new Vector2(
-                        (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * 24.0,
-                        controller1.getLeftJoystickPosition().getY() * 6.0
-                ),
-                controller1.getRightJoystickPosition().getY() * 4.0
-        );
-
-        Vector2 harvesterTargetHorizontalVelocityFromJoystick = controller1.getRightJoystickPosition().mul(Range.scale(
-                controller1.getLeftTriggerPosition() + controller1.getRightTriggerPosition(),
-                0.0, 2.0,
-                MAX_HARVESTER_TARGET_HORIZONTAL_SPEED_FROM_JOYSTICK_WITHOUT_DEPRESSED_TRIGGERS, MAX_HARVESTER_TARGET_HORIZONTAL_SPEED_FROM_JOYSTICK_WITH_DEPRESSED_TRIGGERS
-        ));
-
-        bucketLocalizer.setTargetVelocity(harvesterTargetHorizontalVelocityFromJoystick.appendZ(
-                -bucketLocalizer.getSlidePosition().getZ() * BUCKET_Z_POSITION_CORRECTION_FACTOR
-        ));
-
-        reverseSlideLine.setTargetVelocity(reverseSlideLine.getTargetVelocity().addX(
-                (controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition()) * MAX_BUCKET_TARGET_SPEED_FROM_TRIGGERS)
-        );
-
-        // Calculate robot target target velocity contributed by triggers
-        double navTargetRotationVelocityFromTriggers = (controller2.getRightTriggerPosition() - controller2.getLeftTriggerPosition()) * MAX_NAV_TARGET_ROTATION_SPEED_FROM_TRIGGERS;
-
-        // Add nav target velocity contributed by triggers
-        nav.setTargetRotationVelocity(nav.getTargetAngularVelocity() + navTargetRotationVelocityFromTriggers);
-
-        if (controller2.getDpadPosition().getMagnitude() == 1.0) {
-            poseManager.setTargetNavRotation(new Pose.NavRotation(controller2.getDpadPosition().getRotation(), NAV_TARGET_ROTATION_TOLERANCE_WITH_DPAD));
-        }
-
-        if (controller1.isLeftBumperPressed()) {
-            if (targetPose == null) {
-                targetPose = Pose.PLACING_SLIVER_IN_CARGO_HOLD;
+            if (nav.drive.flWheel.isPositionAt(flWheelPositionForDumpingSilverMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    nav.drive.frWheel.isPositionAt(frWheelPositionForDumpingSilverMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    nav.drive.blWheel.isPositionAt(blWheelPositionForDumpingSilverMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    nav.drive.brWheel.isPositionAt(brWheelPositionForDumpingSilverMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    bucket.slide.isPositionAt(bucketSlidePositionForDumpingSilverMinerals, BUCKET_SLIDE_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITION)) {
+                bucket.tensioner.setTargetPosition(BUCKET_TENSIONER_TARGET_POSITION_FOR_DUMPING_SILVER_MINERALS);
             } else {
-                targetPose = null;
+                bucket.tensioner.setTargetPosition(1.0);
+            }
+        } else if (controller2.isYButtonDown()) {
+            nav.drive.flWheel.setTargetPosition(flWheelPositionForDumpingGoldMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            nav.drive.frWheel.setTargetPosition(frWheelPositionForDumpingGoldMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            nav.drive.blWheel.setTargetPosition(blWheelPositionForDumpingGoldMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            nav.drive.brWheel.setTargetPosition(brWheelPositionForDumpingGoldMinerals, MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS);
+            bucket.slide.setTargetPosition(bucketSlidePositionForDumpingGoldMinerals);
+            bucket.correctYPosition();
+
+            if (nav.drive.flWheel.isPositionAt(flWheelPositionForDumpingGoldMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    nav.drive.frWheel.isPositionAt(frWheelPositionForDumpingGoldMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    nav.drive.blWheel.isPositionAt(blWheelPositionForDumpingGoldMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    nav.drive.brWheel.isPositionAt(brWheelPositionForDumpingGoldMinerals, DRIVE_WHEEL_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITIONS) &&
+                    bucket.slide.isPositionAt(bucketSlidePositionForDumpingGoldMinerals, BUCKET_SLIDE_POSITION_TOLERANCE_WHEN_SETTING_TARGET_POSITION)) {
+                bucket.tensioner.setTargetPosition(BUCKET_TENSIONER_TARGET_POSITION_FOR_DUMPING_GOLD_MINERALS);
+            } else {
+                bucket.tensioner.setTargetPosition(1.0);
+            }
+        } else {
+            double navTargetAngularVelocityFromController1Triggers =
+                    (controller1.getLeftTriggerPosition() - controller1.getRightTriggerPosition()) * MAX_NAV_TARGET_ANGULAR_SPEED;
+
+            double controller1RightJoystickRotationSnappedTo45s = Math.round(controller1.getRightJoystickPosition().getRotation() / 45.0) * 45.0;
+            double navTargetAngularVelocityFromController1Joystick = controller1.getRightJoystickPosition().getMagnitude() > 0.5 ?
+                    Degrees.normalize(controller1RightJoystickRotationSnappedTo45s - nav.getRotation()) * NAV_ROTATION_GAIN : 0.0;
+
+            double navTargetAngularVelocityFromController2Joystick;
+            if (bucket.getXPositionForCorrectYPosition() < MIN_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT) {
+                navTargetAngularVelocityFromController2Joystick = -controller2.getLeftJoystickPosition().getX() /
+                        (bucket.getXPositionForCorrectYPosition() / MIN_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT) * MAX_NAV_TARGET_ANGULAR_SPEED;
+            } else if (bucket.getXPositionForCorrectYPosition() > MAX_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT) {
+                navTargetAngularVelocityFromController2Joystick = -controller2.getLeftJoystickPosition().getX() /
+                        (bucket.getXPositionForCorrectYPosition() / MAX_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT) * MAX_NAV_TARGET_ANGULAR_SPEED;
+            } else {
+                navTargetAngularVelocityFromController2Joystick = -controller2.getLeftJoystickPosition().getX() * MAX_NAV_TARGET_ANGULAR_SPEED;
+            }
+
+            double navTargetAngularVelocity =
+                    navTargetAngularVelocityFromController1Triggers +
+                    navTargetAngularVelocityFromController1Joystick +
+                    navTargetAngularVelocityFromController2Joystick;
+
+            Vector2 navTargetVelocity = controller1.getLeftJoystickPosition().mul(MAX_NAV_TARGET_SPEED);
+
+            if ((nav.areTargetVelocitiesSet() || !navTargetVelocity.equals(Vector2.ZERO) || navTargetAngularVelocity != 0.0) && !controller2.isLeftButtonDown() && !controller2.isRightButtonDown()) {
+                nav.setTargetVelocities(
+                        navTargetVelocity,
+                        navTargetAngularVelocity
+                );
+            } else if (controller2.isLeftButtonPressed() || controller2.isRightButtonPressed()) {
+                double maxDriveWheelTargetPositionOffset;
+                if (controller2.isLeftButtonPressed()) {
+                    maxDriveWheelTargetPositionOffset = MAX_DRIVE_WHEEL_TARGET_POSITION_OFFSET_WHEN_ADJUSTING_ROTATION;
+                } else if (controller2.isRightButtonPressed()) {
+                    maxDriveWheelTargetPositionOffset = -MAX_DRIVE_WHEEL_TARGET_POSITION_OFFSET_WHEN_ADJUSTING_ROTATION;
+                } else {
+                    maxDriveWheelTargetPositionOffset = 0.0;
+                }
+
+                double driveWheelTargetPositionOffset;
+                if (bucket.getXPositionForCorrectYPosition() < MIN_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT) {
+                    driveWheelTargetPositionOffset = maxDriveWheelTargetPositionOffset /
+                            (bucket.getXPositionForCorrectYPosition() / MIN_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT);
+                } else if (bucket.getXPositionForCorrectYPosition() > MAX_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT) {
+                    driveWheelTargetPositionOffset = maxDriveWheelTargetPositionOffset /
+                            (bucket.getXPositionForCorrectYPosition() / MAX_BUCKET_X_POSITION_FOR_MAX_NAV_ROTATIONAL_MOVEMENT);
+                } else {
+                    driveWheelTargetPositionOffset = maxDriveWheelTargetPositionOffset;
+                }
+
+                nav.drive.flWheel.setTargetPosition(
+                        nav.drive.flWheel.getTargetPosition() + driveWheelTargetPositionOffset,
+                        MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS
+                );
+                nav.drive.frWheel.setTargetPosition(
+                        nav.drive.frWheel.getTargetPosition() + driveWheelTargetPositionOffset,
+                        MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS
+                );
+                nav.drive.blWheel.setTargetPosition(
+                        nav.drive.blWheel.getTargetPosition() + driveWheelTargetPositionOffset,
+                        MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS
+                );
+                nav.drive.brWheel.setTargetPosition(
+                        nav.drive.brWheel.getTargetPosition() + driveWheelTargetPositionOffset,
+                        MAX_DRIVE_WHEEL_SPEED_WHEN_SETTING_DRIVE_WHEEL_TARGET_POSITIONS
+                );
+            }
+
+            double bucketSlidePower = controller2.getRightTriggerPosition() - controller2.getLeftTriggerPosition();
+
+            if ((bucket.slide.isPowerSet() || bucketSlidePower != 0.0) && !controller2.isDownButtonDown() && !controller2.isUpButtonDown()) {
+                bucket.slide.setPower(bucketSlidePower);
+            } else if (controller2.isDownButtonPressed() || controller2.isUpButtonPressed()) {
+                double bucketSlideTargetPositionOffset;
+                if (controller2.isDownButtonPressed()) {
+                    bucketSlideTargetPositionOffset = -BUCKET_SLIDE_TARGET_POSITION_OFFSET_WHEN_ADJUSTING_POSITION;
+                } else if (controller2.isUpButtonPressed()) {
+                    bucketSlideTargetPositionOffset = BUCKET_SLIDE_TARGET_POSITION_OFFSET_WHEN_ADJUSTING_POSITION;
+                } else {
+                    bucketSlideTargetPositionOffset = 0.0;
+                }
+
+                bucket.slide.setTargetPosition(
+                        bucket.slide.getTargetPosition() + bucketSlideTargetPositionOffset,
+                        BUCKET_SLIDE_MAX_SPEED_WHEN_ADJUSTING_POSITION
+                );
+            }
+
+            if (controller2.getRightJoystickPosition().getY() != 0.0 || controller2.isRightJoystickToggleOn()) {
+                bucket.pivotShaft.setPower(controller2.getRightJoystickPosition().getY());
+            } else {
+                bucket.correctYPosition();
+            }
+
+            if (!controller2.isRightJoystickToggleOn() && bucket.slide.getPosition() > bucket.getMinSlidePositionForScoopingMinerals()) {
+                bucket.tensioner.setTargetPosition(Range.scale(bucket.slide.getPosition(),
+                        bucket.getMinSlidePositionForScoopingMinerals(), bucket.slide.getMaxPosition(),
+                        BUCKET_TENSIONER_TARGET_POSITION_AT_MIN_SLIDE_POSITION_FOR_SCOOPING_MINERALS, BUCKET_TENSIONER_TARGET_POSITION_AT_MAX_SLIDE_POSITION_FOR_SCOOPING_MINERALS
+                ));
+            } else if (controller2.isAButtonDown()) {
+                bucket.tensioner.setTargetPosition(BUCKET_TENSIONER_TARGET_POSITION_FOR_DUMPING_SILVER_MINERALS);
+
+                flWheelPositionForDumpingSilverMinerals = nav.drive.flWheel.getPosition();
+                frWheelPositionForDumpingSilverMinerals = nav.drive.frWheel.getPosition();
+                blWheelPositionForDumpingSilverMinerals = nav.drive.blWheel.getPosition();
+                brWheelPositionForDumpingSilverMinerals = nav.drive.brWheel.getPosition();
+                bucketSlidePositionForDumpingSilverMinerals = bucket.slide.getPosition();
+            } else if (controller2.isBButtonDown()) {
+                bucket.tensioner.setTargetPosition(BUCKET_TENSIONER_TARGET_POSITION_FOR_DUMPING_GOLD_MINERALS);
+
+                flWheelPositionForDumpingGoldMinerals = nav.drive.flWheel.getPosition();
+                frWheelPositionForDumpingGoldMinerals = nav.drive.frWheel.getPosition();
+                blWheelPositionForDumpingGoldMinerals = nav.drive.blWheel.getPosition();
+                brWheelPositionForDumpingGoldMinerals = nav.drive.brWheel.getPosition();
+                bucketSlidePositionForDumpingGoldMinerals = bucket.slide.getPosition();
+            } else {
+                bucket.tensioner.setTargetPosition(1.0);
             }
         }
-
-        while (targetPose != null && poseManager.isAtPose(targetPose)) {
-            targetPose = targetPose.getNext();
-        }
-
-        if (targetPose != null) {
-            poseManager.setTargetPose(targetPose);
-        }
-        */
     }
 }

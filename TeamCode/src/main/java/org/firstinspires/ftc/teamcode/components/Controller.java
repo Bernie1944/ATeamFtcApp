@@ -13,6 +13,10 @@ public class Controller extends Component {
 
     private final double joystickMagnitudeDeadzone;
 
+    // Becomes true when buttons are pressed together and only goes to false once both buttons are up
+    private boolean startPlusADown = false;
+    private boolean startPlusBDown = false;
+
     // Between [-1, 1]
     private Vector2 leftJoystickPosition = Vector2.ZERO;
     private Vector2 rightJoystickPosition = Vector2.ZERO;
@@ -22,82 +26,100 @@ public class Controller extends Component {
     private double leftTriggerPosition = 0.0;
     private double rightTriggerPosition = 0.0;
 
-    private boolean leftStickDown = false;
-    private boolean rightStickDown = false;
+    private boolean leftJoystickDown = false;
+    private boolean rightJoystickDown = false;
     private boolean leftTriggerDown = false;
     private boolean rightTriggerDown = false;
     private boolean leftBumperDown = false;
     private boolean rightBumperDown = false;
+    private boolean leftButtonDown = false;
+    private boolean rightButtonDown = false;
+    private boolean downButtonDown = false;
+    private boolean upButtonDown = false;
     private boolean aButtonDown = false;
     private boolean bButtonDown = false;
     private boolean xButtonDown = false;
     private boolean yButtonDown = false;
-    private boolean backButtonDown = false;
     private boolean startButtonDown = false;
 
-    private boolean leftStickPressed = false;
-    private boolean rightStickPressed = false;
+    private boolean leftJoystickPressed = false;
+    private boolean rightJoystickPressed = false;
     private boolean leftTriggerPressed = false;
     private boolean rightTriggerPressed = false;
     private boolean leftBumperPressed = false;
     private boolean rightBumperPressed = false;
+    private boolean leftButtonPressed = false;
+    private boolean rightButtonPressed = false;
+    private boolean downButtonPressed = false;
+    private boolean upButtonPressed = false;
     private boolean aButtonPressed = false;
     private boolean bButtonPressed = false;
     private boolean xButtonPressed = false;
     private boolean yButtonPressed = false;
-    private boolean backButtonPressed = false;
     private boolean startButtonPressed = false;
 
-    private boolean leftStickReleased = false;
-    private boolean rightStickReleased = false;
+    private boolean leftJoystickReleased = false;
+    private boolean rightJoystickReleased = false;
     private boolean leftTriggerReleased = false;
     private boolean rightTriggerReleased = false;
     private boolean leftBumperReleased = false;
     private boolean rightBumperReleased = false;
+    private boolean leftButtonReleased = false;
+    private boolean rightButtonReleased = false;
+    private boolean downButtonReleased = false;
+    private boolean upButtonReleased = false;
     private boolean aButtonReleased = false;
     private boolean bButtonReleased = false;
     private boolean xButtonReleased = false;
     private boolean yButtonReleased = false;
-    private boolean backButtonReleased = false;
     private boolean startButtonReleased = false;
 
-    private boolean leftStickToggleOn = false;
-    private boolean rightStickToggleOn = false;
+    private boolean leftJoystickToggleOn = false;
+    private boolean rightJoystickToggleOn = false;
     private boolean leftTriggerToggleOn = false;
     private boolean rightTriggerToggleOn = false;
     private boolean leftBumperToggleOn = false;
     private boolean rightBumperToggleOn = false;
+    private boolean leftButtonToggleOn = false;
+    private boolean rightButtonToggleOn = false;
+    private boolean downButtonToggleOn = false;
+    private boolean upButtonToggleOn = false;
     private boolean aButtonToggleOn = false;
     private boolean bButtonToggleOn = false;
     private boolean xButtonToggleOn = false;
     private boolean yButtonToggleOn = false;
-    private boolean backButtonToggleOn = false;
     private boolean startButtonToggleOn = false;
 
-    private boolean leftStickToggleActivated = false;
-    private boolean rightStickToggleActivated = false;
+    private boolean leftJoystickToggleActivated = false;
+    private boolean rightJoystickToggleActivated = false;
     private boolean leftTriggerToggleActivated = false;
     private boolean rightTriggerToggleActivated = false;
     private boolean leftBumperToggleActivated = false;
     private boolean rightBumperToggleActivated = false;
+    private boolean leftButtonToggleActivated = false;
+    private boolean rightButtonToggleActivated = false;
+    private boolean downButtonToggleActivated = false;
+    private boolean upButtonToggleActivated = false;
     private boolean aButtonToggleActivated = false;
     private boolean bButtonToggleActivated = false;
     private boolean xButtonToggleActivated = false;
     private boolean yButtonToggleActivated = false;
-    private boolean backButtonToggleActivated = false;
     private boolean startButtonToggleActivated = false;
 
-    private boolean leftStickToggleDeactivated = false;
-    private boolean rightStickToggleDeactivated = false;
+    private boolean leftJoystickToggleDeactivated = false;
+    private boolean rightJoystickToggleDeactivated = false;
     private boolean leftTriggerToggleDeactivated = false;
     private boolean rightTriggerToggleDeactivated = false;
     private boolean leftBumperToggleDeactivated = false;
     private boolean rightBumperToggleDeactivated = false;
+    private boolean leftButtonToggleDeactivated = false;
+    private boolean rightButtonToggleDeactivated = false;
+    private boolean downButtonToggleDeactivated = false;
+    private boolean upButtonToggleDeactivated = false;
     private boolean aButtonToggleDeactivated = false;
     private boolean bButtonToggleDeactivated = false;
     private boolean xButtonToggleDeactivated = false;
     private boolean yButtonToggleDeactivated = false;
-    private boolean backButtonToggleDeactivated = false;
     private boolean startButtonToggleDeactivated = false;
 
     // When using an Xbox 360 controller configured as a Logitech controller under the Driver Station app's Settings,
@@ -129,12 +151,12 @@ public class Controller extends Component {
         return rightTriggerPosition;
     }
 
-    public boolean isLeftStickDown() {
-        return leftStickDown;
+    public boolean isLeftJoystickDown() {
+        return leftJoystickDown;
     }
 
-    public boolean isRightStickDown() {
-        return rightStickDown;
+    public boolean isRightJoystickDown() {
+        return rightJoystickDown;
     }
 
     public boolean isLeftTriggerDown() {
@@ -153,6 +175,22 @@ public class Controller extends Component {
         return rightBumperDown;
     }
 
+    public boolean isLeftButtonDown() {
+        return leftButtonDown;
+    }
+
+    public boolean isRightButtonDown() {
+        return rightButtonDown;
+    }
+
+    public boolean isDownButtonDown() {
+        return downButtonDown;
+    }
+
+    public boolean isUpButtonDown() {
+        return upButtonDown;
+    }
+
     public boolean isAButtonDown() {
         return aButtonDown;
     }
@@ -169,20 +207,16 @@ public class Controller extends Component {
         return yButtonDown;
     }
 
-    public boolean isBackButtonDown() {
-        return backButtonDown;
-    }
-
     public boolean isStartButtonDown() {
         return startButtonDown;
     }
 
-    public boolean isLeftStickPressed() {
-        return leftStickPressed;
+    public boolean isLeftJoystickPressed() {
+        return leftJoystickPressed;
     }
 
-    public boolean isRightStickPressed() {
-        return rightStickPressed;
+    public boolean isRightJoystickPressed() {
+        return rightJoystickPressed;
     }
 
     public boolean isLeftTriggerPressed() {
@@ -201,6 +235,22 @@ public class Controller extends Component {
         return rightBumperPressed;
     }
 
+    public boolean isLeftButtonPressed() {
+        return leftButtonPressed;
+    }
+
+    public boolean isRightButtonPressed() {
+        return rightButtonPressed;
+    }
+
+    public boolean isDownButtonPressed() {
+        return downButtonPressed;
+    }
+
+    public boolean isUpButtonPressed() {
+        return upButtonPressed;
+    }
+
     public boolean isAButtonPressed() {
         return aButtonPressed;
     }
@@ -217,20 +267,16 @@ public class Controller extends Component {
         return yButtonPressed;
     }
 
-    public boolean isBackButtonPressed() {
-        return backButtonPressed;
-    }
-
     public boolean isStartButtonPressed() {
         return startButtonPressed;
     }
 
-    public boolean isLeftStickReleased() {
-        return leftStickReleased;
+    public boolean isLeftJoystickReleased() {
+        return leftJoystickReleased;
     }
 
-    public boolean isRightStickReleased() {
-        return rightStickReleased;
+    public boolean isRightJoystickReleased() {
+        return rightJoystickReleased;
     }
 
     public boolean isLeftTriggerReleased() {
@@ -249,6 +295,22 @@ public class Controller extends Component {
         return rightBumperReleased;
     }
 
+    public boolean isLeftButtonReleased() {
+        return leftButtonReleased;
+    }
+
+    public boolean isRightButtonReleased() {
+        return rightButtonReleased;
+    }
+
+    public boolean isDownButtonReleased() {
+        return downButtonReleased;
+    }
+
+    public boolean isUpButtonReleased() {
+        return upButtonReleased;
+    }
+
     public boolean isAButtonReleased() {
         return aButtonReleased;
     }
@@ -265,20 +327,16 @@ public class Controller extends Component {
         return yButtonReleased;
     }
 
-    public boolean isBackButtonReleased() {
-        return backButtonReleased;
-    }
-
     public boolean isStartButtonReleased() {
         return startButtonReleased;
     }
 
-    public boolean isLeftStickToggleOn() {
-        return leftStickToggleOn;
+    public boolean isLeftJoystickToggleOn() {
+        return leftJoystickToggleOn;
     }
 
-    public boolean isRightStickToggleOn() {
-        return rightStickToggleOn;
+    public boolean isRightJoystickToggleOn() {
+        return rightJoystickToggleOn;
     }
 
     public boolean isLeftTriggerToggleOn() {
@@ -297,6 +355,22 @@ public class Controller extends Component {
         return rightBumperToggleOn;
     }
 
+    public boolean isLeftButtonToggleOn() {
+        return leftButtonToggleOn;
+    }
+
+    public boolean isRightButtonToggleOn() {
+        return rightButtonToggleOn;
+    }
+
+    public boolean isDownButtonToggleOn() {
+        return downButtonToggleOn;
+    }
+
+    public boolean isUpButtonToggleOn() {
+        return upButtonToggleOn;
+    }
+
     public boolean isAButtonToggleOn() {
         return aButtonToggleOn;
     }
@@ -313,20 +387,16 @@ public class Controller extends Component {
         return yButtonToggleOn;
     }
 
-    public boolean isBackButtonToggleOn() {
-        return backButtonToggleOn;
-    }
-
     public boolean isStartButtonToggleOn() {
         return startButtonToggleOn;
     }
 
-    public boolean isLeftStickToggleActivated() {
-        return leftStickToggleActivated;
+    public boolean isLeftJoystickToggleActivated() {
+        return leftJoystickToggleActivated;
     }
 
-    public boolean isRightStickToggleActivated() {
-        return rightStickToggleActivated;
+    public boolean isRightJoystickToggleActivated() {
+        return rightJoystickToggleActivated;
     }
 
     public boolean isLeftTriggerToggleActivated() {
@@ -345,6 +415,22 @@ public class Controller extends Component {
         return rightBumperToggleActivated;
     }
 
+    public boolean isLeftButtonToggleActivated() {
+        return leftButtonToggleActivated;
+    }
+
+    public boolean isRightButtonToggleActivated() {
+        return rightButtonToggleActivated;
+    }
+
+    public boolean isDownButtonToggleActivated() {
+        return downButtonToggleActivated;
+    }
+
+    public boolean isUpButtonToggleActivated() {
+        return upButtonToggleActivated;
+    }
+
     public boolean isAButtonToggleActivated() {
         return aButtonToggleActivated;
     }
@@ -361,20 +447,16 @@ public class Controller extends Component {
         return yButtonToggleActivated;
     }
 
-    public boolean isBackButtonToggleActivated() {
-        return backButtonToggleActivated;
-    }
-
     public boolean isStartButtonToggleActivated() {
         return startButtonToggleActivated;
     }
 
-    public boolean isLeftStickToggleDeactivated() {
-        return leftStickToggleDeactivated;
+    public boolean isLeftJoystickToggleDeactivated() {
+        return leftJoystickToggleDeactivated;
     }
 
-    public boolean isRightStickToggleDeactivated() {
-        return rightStickToggleDeactivated;
+    public boolean isRightJoystickToggleDeactivated() {
+        return rightJoystickToggleDeactivated;
     }
 
     public boolean isLeftTriggerToggleDeactivated() {
@@ -393,6 +475,22 @@ public class Controller extends Component {
         return rightBumperToggleDeactivated;
     }
 
+    public boolean isLeftButtonToggleDeactivated() {
+        return leftButtonToggleDeactivated;
+    }
+
+    public boolean isRightButtonToggleDeactivated() {
+        return rightButtonToggleDeactivated;
+    }
+
+    public boolean isDownButtonToggleDeactivated() {
+        return downButtonToggleDeactivated;
+    }
+
+    public boolean isUpButtonToggleDeactivated() {
+        return upButtonToggleDeactivated;
+    }
+
     public boolean isAButtonToggleDeactivated() {
         return aButtonToggleDeactivated;
     }
@@ -409,10 +507,6 @@ public class Controller extends Component {
         return yButtonToggleDeactivated;
     }
 
-    public boolean isBackButtonToggleDeactivated() {
-        return backButtonToggleDeactivated;
-    }
-
     public boolean isStartButtonToggleDeactivated() {
         return startButtonToggleDeactivated;
     }
@@ -420,6 +514,12 @@ public class Controller extends Component {
     // Called through Component.update()
     @Override
     void updateImpl() {
+        if (gamepad.start && gamepad.a) startPlusADown = true;
+        else if (!gamepad.start && !gamepad.a) startPlusADown = false;
+
+        if (gamepad.start && gamepad.b) startPlusBDown = true;
+        else if (!gamepad.start && !gamepad.b) startPlusBDown = false;
+
         // gamepad.left_stick_y is inverted
         leftJoystickPosition = new Vector2(gamepad.left_stick_x, -gamepad.left_stick_y);
         leftJoystickPosition = leftJoystickPosition.withMagnitude(
@@ -440,19 +540,19 @@ public class Controller extends Component {
         leftTriggerPosition = gamepad.left_trigger;
         rightTriggerPosition = gamepad.right_trigger;
 
-        leftStickPressed = gamepad.left_stick_button && !leftStickDown;
-        leftStickReleased = leftStickDown && !gamepad.left_stick_button;
-        leftStickDown = gamepad.left_stick_button;
-        if (leftStickPressed) leftStickToggleOn = !leftStickToggleOn;
-        leftStickToggleActivated = leftStickPressed && leftStickToggleOn;
-        leftStickToggleDeactivated = leftStickPressed && !leftStickToggleOn;
+        leftJoystickPressed = gamepad.left_stick_button && !leftJoystickDown;
+        leftJoystickReleased = leftJoystickDown && !gamepad.left_stick_button;
+        leftJoystickDown = gamepad.left_stick_button;
+        if (leftJoystickPressed) leftJoystickToggleOn = !leftJoystickToggleOn;
+        leftJoystickToggleActivated = leftJoystickPressed && leftJoystickToggleOn;
+        leftJoystickToggleDeactivated = leftJoystickPressed && !leftJoystickToggleOn;
 
-        rightStickPressed = gamepad.right_stick_button && !rightStickDown;
-        rightStickReleased = rightStickDown && !gamepad.right_stick_button;
-        rightStickDown = gamepad.right_stick_button;
-        if (rightStickPressed) rightStickToggleOn = !rightStickToggleOn;
-        rightStickToggleActivated = rightStickPressed && rightStickToggleOn;
-        rightStickToggleDeactivated = rightStickPressed && !rightStickToggleOn;
+        rightJoystickPressed = gamepad.right_stick_button && !rightJoystickDown;
+        rightJoystickReleased = rightJoystickDown && !gamepad.right_stick_button;
+        rightJoystickDown = gamepad.right_stick_button;
+        if (rightJoystickPressed) rightJoystickToggleOn = !rightJoystickToggleOn;
+        rightJoystickToggleActivated = rightJoystickPressed && rightJoystickToggleOn;
+        rightJoystickToggleDeactivated = rightJoystickPressed && !rightJoystickToggleOn;
 
         leftTriggerPressed = gamepad.left_trigger != 0.0 && !leftTriggerDown;
         leftTriggerReleased = leftTriggerDown && gamepad.left_trigger == 0.0;
@@ -482,16 +582,44 @@ public class Controller extends Component {
         rightBumperToggleActivated = rightBumperPressed && rightBumperToggleOn;
         rightBumperToggleDeactivated = rightBumperPressed && !rightBumperToggleOn;
 
-        aButtonPressed = gamepad.a && !aButtonDown;
+        leftButtonPressed = gamepad.dpad_left && !leftButtonDown;
+        leftButtonReleased = leftButtonDown && !gamepad.dpad_left;
+        leftButtonDown = gamepad.dpad_left;
+        if (leftButtonPressed) leftButtonToggleOn = !leftButtonToggleOn;
+        leftButtonToggleActivated = leftButtonPressed && leftButtonToggleOn;
+        leftButtonToggleDeactivated = leftButtonPressed && !leftButtonToggleOn;
+
+        rightButtonPressed = gamepad.dpad_right && !rightButtonDown;
+        rightButtonReleased = rightButtonDown && !gamepad.dpad_right;
+        rightButtonDown = gamepad.dpad_right;
+        if (rightButtonPressed) rightButtonToggleOn = !rightButtonToggleOn;
+        rightButtonToggleActivated = rightButtonPressed && rightButtonToggleOn;
+        rightButtonToggleDeactivated = rightButtonPressed && !rightButtonToggleOn;
+
+        downButtonPressed = gamepad.dpad_down && !downButtonDown;
+        downButtonReleased = downButtonDown && !gamepad.dpad_down;
+        downButtonDown = gamepad.dpad_down;
+        if (downButtonPressed) downButtonToggleOn = !downButtonToggleOn;
+        downButtonToggleActivated = downButtonPressed && downButtonToggleOn;
+        downButtonToggleDeactivated = downButtonPressed && !downButtonToggleOn;
+
+        upButtonPressed = gamepad.dpad_up && !upButtonDown;
+        upButtonReleased = upButtonDown && !gamepad.dpad_up;
+        upButtonDown = gamepad.dpad_up;
+        if (upButtonPressed) upButtonToggleOn = !upButtonToggleOn;
+        upButtonToggleActivated = upButtonPressed && upButtonToggleOn;
+        upButtonToggleDeactivated = upButtonPressed && !upButtonToggleOn;
+
+        aButtonPressed = gamepad.a && !aButtonDown && !startPlusADown;
         aButtonReleased = aButtonDown && !gamepad.a;
-        aButtonDown = gamepad.a;
+        aButtonDown = gamepad.a && !startPlusADown;
         if (aButtonPressed) aButtonToggleOn = !aButtonToggleOn;
         aButtonToggleActivated = aButtonPressed && aButtonToggleOn;
         aButtonToggleDeactivated = aButtonPressed && !aButtonToggleOn;
 
-        bButtonPressed = gamepad.b && !bButtonDown;
+        bButtonPressed = gamepad.b && !bButtonDown && !startPlusBDown;
         bButtonReleased = bButtonDown && !gamepad.b;
-        bButtonDown = gamepad.b;
+        bButtonDown = gamepad.b && !startPlusBDown;
         if (bButtonPressed) bButtonToggleOn = !bButtonToggleOn;
         bButtonToggleActivated = bButtonPressed && bButtonToggleOn;
         bButtonToggleDeactivated = bButtonPressed && !bButtonToggleOn;
@@ -509,13 +637,6 @@ public class Controller extends Component {
         if (yButtonPressed) yButtonToggleOn = !yButtonToggleOn;
         yButtonToggleActivated = yButtonPressed && yButtonToggleOn;
         yButtonToggleDeactivated = yButtonPressed && !yButtonToggleOn;
-
-        backButtonPressed = gamepad.back && !backButtonDown;
-        backButtonReleased = backButtonDown && !gamepad.back;
-        backButtonDown = gamepad.back;
-        if (backButtonPressed) backButtonToggleOn = !backButtonToggleOn;
-        backButtonToggleActivated = backButtonPressed && backButtonToggleOn;
-        backButtonToggleDeactivated = backButtonPressed && !backButtonToggleOn;
 
         startButtonPressed = gamepad.start && !startButtonDown;
         startButtonReleased = startButtonDown && !gamepad.start;
@@ -542,77 +663,103 @@ public class Controller extends Component {
         ) + "\n" +
                 "leftTriggerPosition : " + String.format("%4.2f", getLeftTriggerPosition()) + "\n" +
                 "rightJoystickPosition : " + String.format("%4.2f", getRightTriggerPosition()) + "\n" +
-                "leftStickDown : " + Boolean.toString(isLeftStickDown()) + "\n" +
-                "rightStickDown : " + Boolean.toString(isRightStickDown()) + "\n" +
+                "leftJoystickDown : " + Boolean.toString(isLeftJoystickDown()) + "\n" +
+                "rightJoystickDown : " + Boolean.toString(isRightJoystickDown()) + "\n" +
                 "leftTriggerDown : " + Boolean.toString(isLeftTriggerDown()) + "\n" +
                 "rightTriggerDown : " + Boolean.toString(isRightTriggerDown()) + "\n" +
                 "leftBumperDown : " + Boolean.toString(isLeftBumperDown()) + "\n" +
                 "rightBumperDown : " + Boolean.toString(isRightBumperDown()) + "\n" +
+                "leftButtonDown : " + Boolean.toString(isLeftButtonDown()) + "\n" +
+                "rightButtonDown : " + Boolean.toString(isRightButtonDown()) + "\n" +
+                "downButtonDown : " + Boolean.toString(isDownButtonDown()) + "\n" +
+                "upButtonDown : " + Boolean.toString(isUpButtonDown()) + "\n" +
                 "aButtonDown : " + Boolean.toString(isAButtonDown()) + "\n" +
                 "bButtonDown : " + Boolean.toString(isBButtonDown()) + "\n" +
                 "xButtonDown : " + Boolean.toString(isXButtonDown()) + "\n" +
                 "yButtonDown : " + Boolean.toString(isYButtonDown()) + "\n" +
-                "backButtonDown : " + Boolean.toString(isBackButtonDown()) + "\n" +
                 "startButtonDown : " + Boolean.toString(isStartButtonDown()) + "\n" +
-                "leftStickPressed : " + Boolean.toString(isLeftStickPressed()) + "\n" +
-                "rightStickPressed : " + Boolean.toString(isRightStickPressed()) + "\n" +
-                "leftTriggerPressed : " + Boolean.toString(isLeftTriggerPressed()) + "\n" +
-                "rightTriggerPressed : " + Boolean.toString(isRightTriggerPressed()) + "\n" +
-                "leftBumperPressed : " + Boolean.toString(isLeftBumperPressed()) + "\n" +
-                "rightBumperPressed : " + Boolean.toString(isRightBumperPressed()) + "\n" +
-                "aButtonPressed : " + Boolean.toString(isAButtonPressed()) + "\n" +
-                "bButtonPressed : " + Boolean.toString(isBButtonPressed()) + "\n" +
-                "xButtonPressed : " + Boolean.toString(isXButtonPressed()) + "\n" +
-                "yButtonPressed : " + Boolean.toString(isYButtonPressed()) + "\n" +
-                "backButtonPressed : " + Boolean.toString(isBackButtonPressed()) + "\n" +
-                "startButtonPressed : " + Boolean.toString(isStartButtonPressed()) + "\n" +
-                "leftStickReleased : " + Boolean.toString(isLeftStickReleased()) + "\n" +
-                "rightStickReleased : " + Boolean.toString(isRightStickReleased()) + "\n" +
-                "leftTriggerReleased : " + Boolean.toString(isLeftTriggerReleased()) + "\n" +
-                "rightTriggerReleased : " + Boolean.toString(isRightTriggerReleased()) + "\n" +
-                "leftBumperReleased : " + Boolean.toString(isLeftBumperReleased()) + "\n" +
-                "rightBumperReleased : " + Boolean.toString(isRightBumperReleased()) + "\n" +
-                "aButtonReleased : " + Boolean.toString(isAButtonReleased()) + "\n" +
-                "bButtonReleased : " + Boolean.toString(isBButtonReleased()) + "\n" +
-                "xButtonReleased : " + Boolean.toString(isXButtonReleased()) + "\n" +
-                "yButtonReleased : " + Boolean.toString(isYButtonReleased()) + "\n" +
-                "backButtonReleased : " + Boolean.toString(isBackButtonReleased()) + "\n" +
-                "startButtonReleased : " + Boolean.toString(isStartButtonReleased()) + "\n" +
-                "leftStickToggleOn : " + Boolean.toString(isLeftStickToggleOn()) + "\n" +
-                "rightStickToggleOn : " + Boolean.toString(isRightStickToggleOn()) + "\n" +
+                "leftJoystickToggleOn : " + Boolean.toString(isLeftJoystickToggleOn()) + "\n" +
+                "rightJoystickToggleOn : " + Boolean.toString(isRightJoystickToggleOn()) + "\n" +
                 "leftTriggerToggleOn : " + Boolean.toString(isLeftTriggerToggleOn()) + "\n" +
                 "rightTriggerToggleOn : " + Boolean.toString(isRightTriggerToggleOn()) + "\n" +
                 "leftBumperToggleOn : " + Boolean.toString(isLeftBumperToggleOn()) + "\n" +
                 "rightBumperToggleOn : " + Boolean.toString(isRightBumperToggleOn()) + "\n" +
+                "leftButtonToggleOn : " + Boolean.toString(isLeftButtonToggleOn()) + "\n" +
+                "rightButtonToggleOn : " + Boolean.toString(isRightButtonToggleOn()) + "\n" +
+                "downButtonToggleOn : " + Boolean.toString(isDownButtonToggleOn()) + "\n" +
+                "upButtonToggleOn : " + Boolean.toString(isUpButtonToggleOn()) + "\n" +
                 "aButtonToggleOn : " + Boolean.toString(isAButtonToggleOn()) + "\n" +
                 "bButtonToggleOn : " + Boolean.toString(isBButtonToggleOn()) + "\n" +
                 "xButtonToggleOn : " + Boolean.toString(isXButtonToggleOn()) + "\n" +
                 "yButtonToggleOn : " + Boolean.toString(isYButtonToggleOn()) + "\n" +
-                "backButtonToggleOn : " + Boolean.toString(isBackButtonToggleOn()) + "\n" +
-                "startButtonToggleOn : " + Boolean.toString(isStartButtonToggleOn()) + "\n" +
-                "leftStickToggleActivated : " + Boolean.toString(isLeftStickToggleActivated()) + "\n" +
-                "rightStickToggleActivated : " + Boolean.toString(isRightStickToggleActivated()) + "\n" +
+                "startButtonToggleOn : " + Boolean.toString(isStartButtonToggleOn());
+    }
+
+    // Returns text verbosely describing state
+    @Override
+    public String toStringVerbose() {
+        return toString() + "\n" +
+                "leftJoystickPressed : " + Boolean.toString(isLeftJoystickPressed()) + "\n" +
+                "rightJoystickPressed : " + Boolean.toString(isRightJoystickPressed()) + "\n" +
+                "leftTriggerPressed : " + Boolean.toString(isLeftTriggerPressed()) + "\n" +
+                "rightTriggerPressed : " + Boolean.toString(isRightTriggerPressed()) + "\n" +
+                "leftBumperPressed : " + Boolean.toString(isLeftBumperPressed()) + "\n" +
+                "rightBumperPressed : " + Boolean.toString(isRightBumperPressed()) + "\n" +
+                "leftButtonPressed : " + Boolean.toString(isLeftButtonPressed()) + "\n" +
+                "rightButtonPressed : " + Boolean.toString(isRightButtonPressed()) + "\n" +
+                "downButtonPressed : " + Boolean.toString(isDownButtonPressed()) + "\n" +
+                "upButtonPressed : " + Boolean.toString(isUpButtonPressed()) + "\n" +
+                "aButtonPressed : " + Boolean.toString(isAButtonPressed()) + "\n" +
+                "bButtonPressed : " + Boolean.toString(isBButtonPressed()) + "\n" +
+                "xButtonPressed : " + Boolean.toString(isXButtonPressed()) + "\n" +
+                "yButtonPressed : " + Boolean.toString(isYButtonPressed()) + "\n" +
+                "startButtonPressed : " + Boolean.toString(isStartButtonPressed()) + "\n" +
+                "leftJoystickReleased : " + Boolean.toString(isLeftJoystickReleased()) + "\n" +
+                "rightJoystickReleased : " + Boolean.toString(isRightJoystickReleased()) + "\n" +
+                "leftTriggerReleased : " + Boolean.toString(isLeftTriggerReleased()) + "\n" +
+                "rightTriggerReleased : " + Boolean.toString(isRightTriggerReleased()) + "\n" +
+                "leftBumperReleased : " + Boolean.toString(isLeftBumperReleased()) + "\n" +
+                "rightBumperReleased : " + Boolean.toString(isRightBumperReleased()) + "\n" +
+                "leftButtonReleased : " + Boolean.toString(isLeftButtonReleased()) + "\n" +
+                "rightButtonReleased : " + Boolean.toString(isRightButtonReleased()) + "\n" +
+                "downButtonReleased : " + Boolean.toString(isDownButtonReleased()) + "\n" +
+                "upButtonReleased : " + Boolean.toString(isUpButtonReleased()) + "\n" +
+                "aButtonReleased : " + Boolean.toString(isAButtonReleased()) + "\n" +
+                "bButtonReleased : " + Boolean.toString(isBButtonReleased()) + "\n" +
+                "xButtonReleased : " + Boolean.toString(isXButtonReleased()) + "\n" +
+                "yButtonReleased : " + Boolean.toString(isYButtonReleased()) + "\n" +
+                "startButtonReleased : " + Boolean.toString(isStartButtonReleased()) + "\n" +
+                "leftJoystickToggleActivated : " + Boolean.toString(isLeftJoystickToggleActivated()) + "\n" +
+                "rightJoystickToggleActivated : " + Boolean.toString(isRightJoystickToggleActivated()) + "\n" +
                 "leftTriggerToggleActivated : " + Boolean.toString(isLeftTriggerToggleActivated()) + "\n" +
                 "rightTriggerToggleActivated : " + Boolean.toString(isRightTriggerToggleActivated()) + "\n" +
                 "leftBumperToggleActivated : " + Boolean.toString(isLeftBumperToggleActivated()) + "\n" +
                 "rightBumperToggleActivated : " + Boolean.toString(isRightBumperToggleActivated()) + "\n" +
+                "leftButtonToggleActivated : " + Boolean.toString(isLeftButtonToggleActivated()) + "\n" +
+                "rightButtonToggleActivated : " + Boolean.toString(isRightButtonToggleActivated()) + "\n" +
+                "downButtonToggleActivated : " + Boolean.toString(isDownButtonToggleActivated()) + "\n" +
+                "upButtonToggleActivated : " + Boolean.toString(isUpButtonToggleActivated()) + "\n" +
                 "aButtonToggleActivated : " + Boolean.toString(isAButtonToggleActivated()) + "\n" +
                 "bButtonToggleActivated : " + Boolean.toString(isBButtonToggleActivated()) + "\n" +
                 "xButtonToggleActivated : " + Boolean.toString(isXButtonToggleActivated()) + "\n" +
                 "yButtonToggleActivated : " + Boolean.toString(isYButtonToggleActivated()) + "\n" +
-                "backButtonToggleActivated : " + Boolean.toString(isBackButtonToggleActivated()) + "\n" +
                 "startButtonToggleActivated : " + Boolean.toString(isStartButtonToggleActivated()) + "\n" +
-                "leftStickToggleDeactivated : " + Boolean.toString(isLeftStickToggleDeactivated()) + "\n" +
-                "rightStickToggleDeactivated : " + Boolean.toString(isRightStickToggleDeactivated()) + "\n" +
+                "leftJoystickToggleDeactivated : " + Boolean.toString(isLeftJoystickToggleDeactivated()) + "\n" +
+                "rightJoystickToggleDeactivated : " + Boolean.toString(isRightJoystickToggleDeactivated()) + "\n" +
                 "leftTriggerToggleDeactivated : " + Boolean.toString(isLeftTriggerToggleDeactivated()) + "\n" +
                 "rightTriggerToggleDeactivated : " + Boolean.toString(isRightTriggerToggleDeactivated()) + "\n" +
                 "leftBumperToggleDeactivated : " + Boolean.toString(isLeftBumperToggleDeactivated()) + "\n" +
                 "rightBumperToggleDeactivated : " + Boolean.toString(isRightBumperToggleDeactivated()) + "\n" +
+                "leftButtonToggleDeactivated : " + Boolean.toString(isLeftButtonToggleDeactivated()) + "\n" +
+                "rightButtonToggleDeactivated : " + Boolean.toString(isRightButtonToggleDeactivated()) + "\n" +
+                "downButtonToggleDeactivated : " + Boolean.toString(isDownButtonToggleDeactivated()) + "\n" +
+                "upButtonToggleDeactivated : " + Boolean.toString(isUpButtonToggleDeactivated()) + "\n" +
                 "aButtonToggleDeactivated : " + Boolean.toString(isAButtonToggleDeactivated()) + "\n" +
                 "bButtonToggleDeactivated : " + Boolean.toString(isBButtonToggleDeactivated()) + "\n" +
                 "xButtonToggleDeactivated : " + Boolean.toString(isXButtonToggleDeactivated()) + "\n" +
                 "yButtonToggleDeactivated : " + Boolean.toString(isYButtonToggleDeactivated()) + "\n" +
-                "backButtonToggleDeactivated : " + Boolean.toString(isBackButtonToggleDeactivated()) + "\n" +
-                "startButtonToggleDeactivated : " + Boolean.toString(isStartButtonToggleDeactivated());
+                "startButtonToggleDeactivated : " + Boolean.toString(isStartButtonToggleDeactivated()) + "\n" +
+                "startPlusADown : " + Boolean.toString(startPlusADown) + "\n" +
+                "startPlusBDown : " + Boolean.toString(startPlusBDown);
     }
 }

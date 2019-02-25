@@ -12,7 +12,7 @@ public class ManualTeleOpMode extends OpMode {
     DcMotor latchDrive;
     DcMotor bucketPivotShaft;
     DcMotor bucketSlide;
-    DcMotor bucketSlideTensioner;
+    DcMotor bucketTensioner;
 
     @Override
     public void init() {
@@ -20,7 +20,7 @@ public class ManualTeleOpMode extends OpMode {
         latchDrive = hardwareMap.dcMotor.get("LatchDrive");
         bucketPivotShaft = hardwareMap.dcMotor.get("BucketPivotShaft");
         bucketSlide = hardwareMap.dcMotor.get("BucketSlide");
-        bucketSlideTensioner = hardwareMap.dcMotor.get("BucketTensioner");
+        bucketTensioner = hardwareMap.dcMotor.get("BucketTensioner");
     }
 
     @Override
@@ -30,7 +30,6 @@ public class ManualTeleOpMode extends OpMode {
         latchDrive.setPower((controller1.isRightBumperDown() ? 1.0 : 0.0) - (controller1.isLeftBumperDown() ? 1.0 : 0.0));
         bucketPivotShaft.setPower(controller1.getLeftJoystickPosition().getY());
         bucketSlide.setPower(controller1.getRightJoystickPosition().getY());
-        bucketSlideTensioner.setPower(controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition());
+        bucketTensioner.setPower(controller1.getRightTriggerPosition() - controller1.getLeftTriggerPosition());
     }
-
 }
