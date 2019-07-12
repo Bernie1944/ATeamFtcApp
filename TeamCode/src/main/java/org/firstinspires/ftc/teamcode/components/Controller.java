@@ -1,9 +1,10 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.util.Range;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.internal.ui.GamepadUser;
 
 import org.firstinspires.ftc.teamcode.util.Vector2;
 
@@ -12,6 +13,9 @@ public class Controller extends Component {
     private final Gamepad gamepad;
 
     private final double joystickMagnitudeDeadzone;
+
+    // True if game pad is connected to driver station
+    private boolean connected = false;
 
     // Becomes true when buttons are pressed together and only goes to false once both buttons are up
     private boolean startPlusADown = false;
@@ -125,10 +129,14 @@ public class Controller extends Component {
     // When using an Xbox 360 controller configured as a Logitech controller under the Driver Station app's Settings,
     // joystickMagnitudeDeadzone should be set to a value greater than 0.0 (0.13 - 0.14 seems to work well),
     // which will result in more "smooth" joystick controls that do not seem to "stick" to the x and y axis (this, however, is not preferable in all cases)
-    public Controller(Telemetry telemetry, HardwareMap hardwareMap, Gamepad gamepad, double joystickMagnitudeDeadzone) {
-        super(telemetry, hardwareMap);
+    public Controller(Telemetry telemetry, HardwareMap hardwareMap, String name, Gamepad gamepad, double joystickMagnitudeDeadzone) {
+        super(telemetry, hardwareMap, name);
         this.gamepad = gamepad;
         this.joystickMagnitudeDeadzone = joystickMagnitudeDeadzone;
+    }
+
+    public boolean isConnected() {
+        return connected;
     }
 
     public Vector2 getLeftJoystickPosition() {
@@ -511,9 +519,35 @@ public class Controller extends Component {
         return startButtonToggleDeactivated;
     }
 
+    public static Vector2 fuseControls(Vector2 control1, Vector2 control2) {
+        double control1Magnitude = control1.getMagnitude();
+        double control2Magnitude = control2.getMagnitude();
+
+        if (control1Magnitude < Double.MIN_NORMAL && control2Magnitude < Double.MIN_NORMAL) {
+            return Vector2.ZERO;
+        } else {
+            return control1.mul(control1Magnitude / (control1Magnitude + control2Magnitude))
+                    .add(control2.mul(control2Magnitude / (control1Magnitude + control2Magnitude)));
+        }
+    }
+
+    public static double fuseControls(double control1, double control2) {
+        double control1Magnitude = Math.abs(control1);
+        double control2Magnitude = Math.abs(control2);
+
+        if (control1Magnitude < Double.MIN_NORMAL && control2Magnitude < Double.MIN_NORMAL) {
+            return 0.0;
+        } else {
+            return control1 * (control1Magnitude / (control1Magnitude + control2Magnitude)) +
+                    control2 * (control2Magnitude / (control1Magnitude + control2Magnitude));
+        }
+    }
+
     // Called through Component.update()
     @Override
-    void updateImpl() {
+    void internalUpdate() {
+        connected = gamepad.getGamepadId() != Gamepad.ID_UNASSOCIATED && gamepad.getGamepadId() != Gamepad.ID_SYNTHETIC;
+
         if (gamepad.start && gamepad.a) startPlusADown = true;
         else if (!gamepad.start && !gamepad.a) startPlusADown = false;
 
@@ -646,120 +680,43 @@ public class Controller extends Component {
         startButtonToggleDeactivated = startButtonPressed && !startButtonToggleOn;
     }
 
-    // Returns text describing state
     @Override
     public String toString() {
-        return "leftJoystickPosition : " + String.format(
-                "(%5.2f, %5.2f) (%5.2f @ %6.1f°)",
-                getLeftJoystickPosition().getX(), getLeftJoystickPosition().getY(), getLeftJoystickPosition().getMagnitude(), getLeftJoystickPosition().getRotation()
-        ) + "\n" +
-                "rightJoystickPosition : " + String.format(
-                "(%5.2f, %5.2f) (%5.2f @ %6.1f°)",
-                getRightJoystickPosition().getX(), getRightJoystickPosition().getY(), getRightJoystickPosition().getMagnitude(), getRightJoystickPosition().getRotation()
-        ) + "\n" +
-                "dpadPosition : " + String.format(
-                "(%5.2f, %5.2f) (%5.2f @ %6.1f°)",
-                getDpadPosition().getX(), getDpadPosition().getY(), getDpadPosition().getMagnitude(), getDpadPosition().getRotation()
-        ) + "\n" +
-                "leftTriggerPosition : " + String.format("%4.2f", getLeftTriggerPosition()) + "\n" +
-                "rightJoystickPosition : " + String.format("%4.2f", getRightTriggerPosition()) + "\n" +
-                "leftJoystickDown : " + Boolean.toString(isLeftJoystickDown()) + "\n" +
-                "rightJoystickDown : " + Boolean.toString(isRightJoystickDown()) + "\n" +
-                "leftTriggerDown : " + Boolean.toString(isLeftTriggerDown()) + "\n" +
-                "rightTriggerDown : " + Boolean.toString(isRightTriggerDown()) + "\n" +
-                "leftBumperDown : " + Boolean.toString(isLeftBumperDown()) + "\n" +
-                "rightBumperDown : " + Boolean.toString(isRightBumperDown()) + "\n" +
-                "leftButtonDown : " + Boolean.toString(isLeftButtonDown()) + "\n" +
-                "rightButtonDown : " + Boolean.toString(isRightButtonDown()) + "\n" +
-                "downButtonDown : " + Boolean.toString(isDownButtonDown()) + "\n" +
-                "upButtonDown : " + Boolean.toString(isUpButtonDown()) + "\n" +
-                "aButtonDown : " + Boolean.toString(isAButtonDown()) + "\n" +
-                "bButtonDown : " + Boolean.toString(isBButtonDown()) + "\n" +
-                "xButtonDown : " + Boolean.toString(isXButtonDown()) + "\n" +
-                "yButtonDown : " + Boolean.toString(isYButtonDown()) + "\n" +
-                "startButtonDown : " + Boolean.toString(isStartButtonDown()) + "\n" +
-                "leftJoystickToggleOn : " + Boolean.toString(isLeftJoystickToggleOn()) + "\n" +
-                "rightJoystickToggleOn : " + Boolean.toString(isRightJoystickToggleOn()) + "\n" +
-                "leftTriggerToggleOn : " + Boolean.toString(isLeftTriggerToggleOn()) + "\n" +
-                "rightTriggerToggleOn : " + Boolean.toString(isRightTriggerToggleOn()) + "\n" +
-                "leftBumperToggleOn : " + Boolean.toString(isLeftBumperToggleOn()) + "\n" +
-                "rightBumperToggleOn : " + Boolean.toString(isRightBumperToggleOn()) + "\n" +
-                "leftButtonToggleOn : " + Boolean.toString(isLeftButtonToggleOn()) + "\n" +
-                "rightButtonToggleOn : " + Boolean.toString(isRightButtonToggleOn()) + "\n" +
-                "downButtonToggleOn : " + Boolean.toString(isDownButtonToggleOn()) + "\n" +
-                "upButtonToggleOn : " + Boolean.toString(isUpButtonToggleOn()) + "\n" +
-                "aButtonToggleOn : " + Boolean.toString(isAButtonToggleOn()) + "\n" +
-                "bButtonToggleOn : " + Boolean.toString(isBButtonToggleOn()) + "\n" +
-                "xButtonToggleOn : " + Boolean.toString(isXButtonToggleOn()) + "\n" +
-                "yButtonToggleOn : " + Boolean.toString(isYButtonToggleOn()) + "\n" +
-                "startButtonToggleOn : " + Boolean.toString(isStartButtonToggleOn());
-    }
-
-    // Returns text verbosely describing state
-    @Override
-    public String toStringVerbose() {
-        return toString() + "\n" +
-                "leftJoystickPressed : " + Boolean.toString(isLeftJoystickPressed()) + "\n" +
-                "rightJoystickPressed : " + Boolean.toString(isRightJoystickPressed()) + "\n" +
-                "leftTriggerPressed : " + Boolean.toString(isLeftTriggerPressed()) + "\n" +
-                "rightTriggerPressed : " + Boolean.toString(isRightTriggerPressed()) + "\n" +
-                "leftBumperPressed : " + Boolean.toString(isLeftBumperPressed()) + "\n" +
-                "rightBumperPressed : " + Boolean.toString(isRightBumperPressed()) + "\n" +
-                "leftButtonPressed : " + Boolean.toString(isLeftButtonPressed()) + "\n" +
-                "rightButtonPressed : " + Boolean.toString(isRightButtonPressed()) + "\n" +
-                "downButtonPressed : " + Boolean.toString(isDownButtonPressed()) + "\n" +
-                "upButtonPressed : " + Boolean.toString(isUpButtonPressed()) + "\n" +
-                "aButtonPressed : " + Boolean.toString(isAButtonPressed()) + "\n" +
-                "bButtonPressed : " + Boolean.toString(isBButtonPressed()) + "\n" +
-                "xButtonPressed : " + Boolean.toString(isXButtonPressed()) + "\n" +
-                "yButtonPressed : " + Boolean.toString(isYButtonPressed()) + "\n" +
-                "startButtonPressed : " + Boolean.toString(isStartButtonPressed()) + "\n" +
-                "leftJoystickReleased : " + Boolean.toString(isLeftJoystickReleased()) + "\n" +
-                "rightJoystickReleased : " + Boolean.toString(isRightJoystickReleased()) + "\n" +
-                "leftTriggerReleased : " + Boolean.toString(isLeftTriggerReleased()) + "\n" +
-                "rightTriggerReleased : " + Boolean.toString(isRightTriggerReleased()) + "\n" +
-                "leftBumperReleased : " + Boolean.toString(isLeftBumperReleased()) + "\n" +
-                "rightBumperReleased : " + Boolean.toString(isRightBumperReleased()) + "\n" +
-                "leftButtonReleased : " + Boolean.toString(isLeftButtonReleased()) + "\n" +
-                "rightButtonReleased : " + Boolean.toString(isRightButtonReleased()) + "\n" +
-                "downButtonReleased : " + Boolean.toString(isDownButtonReleased()) + "\n" +
-                "upButtonReleased : " + Boolean.toString(isUpButtonReleased()) + "\n" +
-                "aButtonReleased : " + Boolean.toString(isAButtonReleased()) + "\n" +
-                "bButtonReleased : " + Boolean.toString(isBButtonReleased()) + "\n" +
-                "xButtonReleased : " + Boolean.toString(isXButtonReleased()) + "\n" +
-                "yButtonReleased : " + Boolean.toString(isYButtonReleased()) + "\n" +
-                "startButtonReleased : " + Boolean.toString(isStartButtonReleased()) + "\n" +
-                "leftJoystickToggleActivated : " + Boolean.toString(isLeftJoystickToggleActivated()) + "\n" +
-                "rightJoystickToggleActivated : " + Boolean.toString(isRightJoystickToggleActivated()) + "\n" +
-                "leftTriggerToggleActivated : " + Boolean.toString(isLeftTriggerToggleActivated()) + "\n" +
-                "rightTriggerToggleActivated : " + Boolean.toString(isRightTriggerToggleActivated()) + "\n" +
-                "leftBumperToggleActivated : " + Boolean.toString(isLeftBumperToggleActivated()) + "\n" +
-                "rightBumperToggleActivated : " + Boolean.toString(isRightBumperToggleActivated()) + "\n" +
-                "leftButtonToggleActivated : " + Boolean.toString(isLeftButtonToggleActivated()) + "\n" +
-                "rightButtonToggleActivated : " + Boolean.toString(isRightButtonToggleActivated()) + "\n" +
-                "downButtonToggleActivated : " + Boolean.toString(isDownButtonToggleActivated()) + "\n" +
-                "upButtonToggleActivated : " + Boolean.toString(isUpButtonToggleActivated()) + "\n" +
-                "aButtonToggleActivated : " + Boolean.toString(isAButtonToggleActivated()) + "\n" +
-                "bButtonToggleActivated : " + Boolean.toString(isBButtonToggleActivated()) + "\n" +
-                "xButtonToggleActivated : " + Boolean.toString(isXButtonToggleActivated()) + "\n" +
-                "yButtonToggleActivated : " + Boolean.toString(isYButtonToggleActivated()) + "\n" +
-                "startButtonToggleActivated : " + Boolean.toString(isStartButtonToggleActivated()) + "\n" +
-                "leftJoystickToggleDeactivated : " + Boolean.toString(isLeftJoystickToggleDeactivated()) + "\n" +
-                "rightJoystickToggleDeactivated : " + Boolean.toString(isRightJoystickToggleDeactivated()) + "\n" +
-                "leftTriggerToggleDeactivated : " + Boolean.toString(isLeftTriggerToggleDeactivated()) + "\n" +
-                "rightTriggerToggleDeactivated : " + Boolean.toString(isRightTriggerToggleDeactivated()) + "\n" +
-                "leftBumperToggleDeactivated : " + Boolean.toString(isLeftBumperToggleDeactivated()) + "\n" +
-                "rightBumperToggleDeactivated : " + Boolean.toString(isRightBumperToggleDeactivated()) + "\n" +
-                "leftButtonToggleDeactivated : " + Boolean.toString(isLeftButtonToggleDeactivated()) + "\n" +
-                "rightButtonToggleDeactivated : " + Boolean.toString(isRightButtonToggleDeactivated()) + "\n" +
-                "downButtonToggleDeactivated : " + Boolean.toString(isDownButtonToggleDeactivated()) + "\n" +
-                "upButtonToggleDeactivated : " + Boolean.toString(isUpButtonToggleDeactivated()) + "\n" +
-                "aButtonToggleDeactivated : " + Boolean.toString(isAButtonToggleDeactivated()) + "\n" +
-                "bButtonToggleDeactivated : " + Boolean.toString(isBButtonToggleDeactivated()) + "\n" +
-                "xButtonToggleDeactivated : " + Boolean.toString(isXButtonToggleDeactivated()) + "\n" +
-                "yButtonToggleDeactivated : " + Boolean.toString(isYButtonToggleDeactivated()) + "\n" +
-                "startButtonToggleDeactivated : " + Boolean.toString(isStartButtonToggleDeactivated()) + "\n" +
-                "startPlusADown : " + Boolean.toString(startPlusADown) + "\n" +
-                "startPlusBDown : " + Boolean.toString(startPlusBDown);
+        return createStateString("connected", isConnected()) +
+                createStateString("leftJoystickPosition", getLeftJoystickPosition().toString("%.2f")) +
+                createStateString("rightJoystickPosition", getRightJoystickPosition().toString("%.2f")) +
+                createStateString("dpadPosition", getDpadPosition().toString("%.2f")) +
+                createStateString("leftTriggerPosition", "%.2f", getLeftTriggerPosition()) +
+                createStateString("rightTriggerPosition", "%.2f", getRightTriggerPosition()) +
+                createStateString("leftJoystickDown", isLeftJoystickDown()) +
+                createStateString("rightJoystickDown", isRightJoystickDown()) +
+                createStateString("leftTriggerDown", isLeftTriggerDown()) +
+                createStateString("rightTriggerDown", isRightTriggerDown()) +
+                createStateString("leftBumperDown", isLeftBumperDown()) +
+                createStateString("rightBumperDown", isRightBumperDown()) +
+                createStateString("leftButtonDown", isLeftButtonDown()) +
+                createStateString("rightButtonDown", isRightButtonDown()) +
+                createStateString("downButtonDown", isDownButtonDown()) +
+                createStateString("upButtonDown", isUpButtonDown()) +
+                createStateString("aButtonDown", isAButtonDown()) +
+                createStateString("bButtonDown", isBButtonDown()) +
+                createStateString("xButtonDown", isXButtonDown()) +
+                createStateString("yButtonDown", isYButtonDown()) +
+                createStateString("startButtonDown", isStartButtonDown()) +
+                createStateString("leftJoystickToggleOn", isLeftJoystickToggleOn()) +
+                createStateString("rightJoystickToggleOn", isRightJoystickToggleOn()) +
+                createStateString("leftTriggerToggleOn", isLeftTriggerToggleOn()) +
+                createStateString("rightTriggerToggleOn", isRightTriggerToggleOn()) +
+                createStateString("leftBumperToggleOn", isLeftBumperToggleOn()) +
+                createStateString("rightBumperToggleOn", isRightBumperToggleOn()) +
+                createStateString("leftButtonToggleOn", isLeftButtonToggleOn()) +
+                createStateString("rightButtonToggleOn", isRightButtonToggleOn()) +
+                createStateString("downButtonToggleOn", isDownButtonToggleOn()) +
+                createStateString("upButtonToggleOn", isUpButtonToggleOn()) +
+                createStateString("aButtonToggleOn", isAButtonToggleOn()) +
+                createStateString("bButtonToggleOn", isBButtonToggleOn()) +
+                createStateString("xButtonToggleOn", isXButtonToggleOn()) +
+                createStateString("yButtonToggleOn", isYButtonToggleOn()) +
+                createStateString("startButtonToggleOn", isStartButtonToggleOn());
     }
 }

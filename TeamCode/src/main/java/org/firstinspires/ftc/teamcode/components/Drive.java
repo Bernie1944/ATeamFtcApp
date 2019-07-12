@@ -4,9 +4,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-
 import org.firstinspires.ftc.teamcode.util.Degrees;
-import org.firstinspires.ftc.teamcode.util.Inches;
 import org.firstinspires.ftc.teamcode.util.Vector2;
 
 // Controls a 4-wheel omnidirectional-drive system where the wheels are mounted at 45 degree angles on the corners of the robot
@@ -25,6 +23,10 @@ public class Drive extends Component {
     private static final double BL_WHEEL_DIAMETER = 3.8;
     private static final double BR_WHEEL_DIAMETER = 3.8;
 
+    // Used as a fudge factor compensating for amount wheels slip if the robot is driving along one of the drive wheel axises
+    // 0.0 = no slippage; 1.0 = complete slippage
+    private static final double VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION = 0.1;
+
     // In inches per second
     // This value along with WHEEL_MAX_ACHIEVABLE_ACCELERATION_FROM_STOP are used in setTarget() to limit target velocities for each of the wheels to obtainable levels
     // while keeping these target wheel velocities proportional to each other,
@@ -38,10 +40,6 @@ public class Drive extends Component {
     // This should be set as high as possible without noticeable decreases in handling
     private static final double WHEEL_MAX_ACHIEVABLE_ACCELERATION_FROM_STOP = 100.0;
 
-    // Used as a fudge factor compensating for amount wheels slip if the robot is driving along one of the drive wheel axises
-    // 0.0 = no slippage; 1.0 = complete slippage
-    private static final double VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION = 0.1;
-
     public final Motor flWheel;
     public final Motor frWheel;
     public final Motor blWheel;
@@ -50,13 +48,13 @@ public class Drive extends Component {
     public Drive(Telemetry telemetry, HardwareMap hardwareMap) {
         super(telemetry, hardwareMap);
 
-        flWheel = new Motor(telemetry, hardwareMap, FL_WHEEL_MOTOR_NAME, FL_WHEEL_DIAMETER * Math.PI, 0.0);
-        frWheel = new Motor(telemetry, hardwareMap, FR_WHEEL_MOTOR_NAME, FR_WHEEL_DIAMETER * Math.PI, 0.0);
-        blWheel = new Motor(telemetry, hardwareMap, BL_WHEEL_MOTOR_NAME, BL_WHEEL_DIAMETER * Math.PI, 0.0);
-        brWheel = new Motor(telemetry, hardwareMap, BR_WHEEL_MOTOR_NAME, BR_WHEEL_DIAMETER * Math.PI, 0.0);
+        flWheel = new Motor(telemetry, hardwareMap, FL_WHEEL_MOTOR_NAME, "%.2fin", FL_WHEEL_DIAMETER * Math.PI, 0.0);
+        frWheel = new Motor(telemetry, hardwareMap, FR_WHEEL_MOTOR_NAME, "%.2fin", FR_WHEEL_DIAMETER * Math.PI, 0.0);
+        blWheel = new Motor(telemetry, hardwareMap, BL_WHEEL_MOTOR_NAME, "%.2fin", BL_WHEEL_DIAMETER * Math.PI, 0.0);
+        brWheel = new Motor(telemetry, hardwareMap, BR_WHEEL_MOTOR_NAME, "%.2fin", BR_WHEEL_DIAMETER * Math.PI, 0.0);
     }
 
-    // In inches per second relative to the drive's rotation
+    // In inches per second relative to the robot's heading
     public Vector2 getVelocity() {
         // In inches per second
         // X-axis is velocity along direction of fr and bl wheels
@@ -92,12 +90,12 @@ public class Drive extends Component {
         return 1.0 - (velocityAlongWheelAxisesFraction * VELOCITY_ALONG_AXIS_WHEEL_SLIP_FRACTION);
     }
 
-    // True if drive has set target velocity and angular velocity and is not running to target position and rotation
+    // True if drive has set target velocity and angular velocity
     public boolean areTargetVelocitiesSet() {
         return flWheel.isTargetVelocitySet() && frWheel.isTargetVelocitySet() && blWheel.isTargetVelocitySet() && brWheel.isTargetVelocitySet();
     }
 
-    // In inches per second relative to the drive's rotation
+    // In inches per second relative to the robot's heading
     public Vector2 getTargetVelocity() {
         // In inches per second
         // X-axis is velocity along direction of fl and br wheels
@@ -123,9 +121,10 @@ public class Drive extends Component {
         return Degrees.fromRadians(targetTangentialVelocityOfWheels / WHEEL_BASE_RADIUS);
     }
 
-    // targetVelocity is in inches per second relative to the drive's rotation
+    // targetVelocity is in inches per second relative to the robot's heading
     // targetAngularVelocity is in degrees per second with positive counterclockwise
     // If targetVelocity and targetAngularVelocity are not obtainable, both of these values will be scaled proportionally and targetVelocity's direction will be kept the same
+    // limitAccelerations: should accelerations be limited to values that should not cause the wheels to slip and the robot to loose it's position?
     public void setTargetVelocities(Vector2 targetVelocity, double targetAngularVelocity) {
         // In inches per second
         // X-axis is velocity along direction of fl and br wheels
@@ -218,38 +217,20 @@ public class Drive extends Component {
 
     // Called through Component.update()
     @Override
-    void updateImpl() {
+    void internalUpdate() {
         flWheel.update();
         frWheel.update();
         blWheel.update();
         brWheel.update();
     }
 
-    // Returns text describing state
     @Override
     public String toString() {
-        return "targetVelocitiesSet : " + Boolean.toString(areTargetVelocitiesSet()) + "\n" +
-                "targetVelocity : " + Inches.toString(getTargetVelocity()) + "\n" +
-                "velocity :       " + Inches.toString(getVelocity()) + "\n" +
-                "targetAngularVelocity : " + Degrees.toString(getTargetAngularVelocity()) + "\n" +
-                "angularVelocity :       " + Degrees.toString(getAngularVelocity());
-    }
-
-    // Returns text verbosely describing state
-    @Override
-    public String toStringVerbose() {
-        return toString() + "\n" +
-                "flWheel {\n" +
-                flWheel.toStringVerbose() + "\n" +
-                "}\n" +
-                "frWheel {\n" +
-                frWheel.toStringVerbose() + "\n" +
-                "}\n" +
-                "blWheel {\n" +
-                blWheel.toStringVerbose() + "\n" +
-                "}\n" +
-                "brWheel {\n" +
-                brWheel.toStringVerbose() + "\n" +
-                "}";
+        return createStateString("targetVelocitiesSet", areTargetVelocitiesSet()) +
+                createStateString("targetVelocity", getTargetVelocity().toString("%.2fin/s")) +
+                createStateString("velocity", getVelocity().toString("%.2fin/s")) +
+                createStateString("targetAngularVelocity", "%.0f°/s", getTargetAngularVelocity()) +
+                createStateString("angularVelocity", "%.0f°/s", getAngularVelocity()) +
+                flWheel.toString() + frWheel.toString() + blWheel.toString() + brWheel.toString();
     }
 }

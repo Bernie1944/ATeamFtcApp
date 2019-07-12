@@ -51,8 +51,8 @@ var activeTableTab = "activeTableTab";
 <li><a href="../../../../com/qualcomm/robotcore/hardware/DcMotorEx.html" title="interface in com.qualcomm.robotcore.hardware"><span class="typeNameLink">Next&nbsp;Class</span></a></li>
 </ul>
 <ul class="navList">
-<li><a href="../../../../index.html?com/qualcomm/robotcore/hardware/DcMotorControllerEx.html" target="_top">Frames</a></li>
-<li><a href="DcMotorControllerEx.html" target="_top">No&nbsp;Frames</a></li>
+<li><a href="../../../../index.html?com/qualcomm/robotcore/hardware/DcMotorControllerEx.html" mode="_top">Frames</a></li>
+<li><a href="DcMotorControllerEx.html" mode="_top">No&nbsp;Frames</a></li>
 </ul>
 <ul class="navList" id="allclasses_navbar_top">
 <li><a href="../../../../allclasses-noframe.html">All&nbsp;Classes</a></li>
@@ -196,14 +196,14 @@ extends <a href="../../../../com/qualcomm/robotcore/hardware/DcMotorController.h
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../com/qualcomm/robotcore/hardware/DcMotorControllerEx.html#setMotorTargetPosition-int-int-int-">setMotorTargetPosition</a></span>(int&nbsp;motor,
                       int&nbsp;position,
                       int&nbsp;tolerance)</code>
-<div class="block">Sets the target position and tolerance for a 'run to position' operation.</div>
+<div class="block">Sets the mode position and tolerance for a 'run to position' operation.</div>
 </td>
 </tr>
 <tr id="i8" class="altColor">
 <td class="colFirst"><code>void</code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../com/qualcomm/robotcore/hardware/DcMotorControllerEx.html#setMotorVelocity-int-double-">setMotorVelocity</a></span>(int&nbsp;motor,
                 double&nbsp;ticksPerSecond)</code>
-<div class="block">Sets the target velocity of the indicated motor.</div>
+<div class="block">Sets the mode velocity of the indicated motor.</div>
 </td>
 </tr>
 <tr id="i9" class="rowColor">
@@ -211,7 +211,7 @@ extends <a href="../../../../com/qualcomm/robotcore/hardware/DcMotorController.h
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../../com/qualcomm/robotcore/hardware/DcMotorControllerEx.html#setMotorVelocity-int-double-org.firstinspires.ftc.robotcore.external.navigation.AngleUnit-">setMotorVelocity</a></span>(int&nbsp;motor,
                 double&nbsp;angularRate,
                 <a href="../../../../org/firstinspires/ftc/robotcore/external/navigation/AngleUnit.html" title="enum in org.firstinspires.ftc.robotcore.external.navigation">AngleUnit</a>&nbsp;unit)</code>
-<div class="block">Sets the target velocity of the indicated motor.</div>
+<div class="block">Sets the mode velocity of the indicated motor.</div>
 </td>
 </tr>
 <tr id="i10" class="altColor">
@@ -320,11 +320,11 @@ extends <a href="../../../../com/qualcomm/robotcore/hardware/DcMotorController.h
 <h4>setMotorVelocity</h4>
 <pre>void&nbsp;setMotorVelocity(int&nbsp;motor,
                       double&nbsp;ticksPerSecond)</pre>
-<div class="block">Sets the target velocity of the indicated motor.</div>
+<div class="block">Sets the mode velocity of the indicated motor.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>motor</code> - the port number of the motor on this controller</dd>
-<dd><code>ticksPerSecond</code> - the new target rate for that motor, in ticks per second</dd>
+<dd><code>ticksPerSecond</code> - the new mode rate for that motor, in ticks per second</dd>
 </dl>
 </li>
 </ul>
@@ -337,11 +337,11 @@ extends <a href="../../../../com/qualcomm/robotcore/hardware/DcMotorController.h
 <pre>void&nbsp;setMotorVelocity(int&nbsp;motor,
                       double&nbsp;angularRate,
                       <a href="../../../../org/firstinspires/ftc/robotcore/external/navigation/AngleUnit.html" title="enum in org.firstinspires.ftc.robotcore.external.navigation">AngleUnit</a>&nbsp;unit)</pre>
-<div class="block">Sets the target velocity of the indicated motor.</div>
+<div class="block">Sets the mode velocity of the indicated motor.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>motor</code> - motor whose velocity is to be adjusted</dd>
-<dd><code>angularRate</code> - the new target rate for that motor, in 'unit's per second</dd>
+<dd><code>angularRate</code> - the new mode rate for that motor, in 'unit's per second</dd>
 <dd><code>unit</code> - the unit inw which angularRate is expressed.</dd>
 <dt><span class="seeLabel">See Also:</span></dt>
 <dd><a href="../../../../com/qualcomm/robotcore/hardware/DcMotorEx.html#setVelocity-double-org.firstinspires.ftc.robotcore.external.navigation.AngleUnit-"><code>DcMotorEx.setVelocity(double, AngleUnit)</code></a></dd>
@@ -360,7 +360,7 @@ extends <a href="../../../../com/qualcomm/robotcore/hardware/DcMotorController.h
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>motor</code> - the motor whose velocity is desired</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>the current target velocity of the motor in ticks per second</dd>
+<dd>the current mode velocity of the motor in ticks per second</dd>
 </dl>
 </li>
 </ul>
@@ -484,12 +484,12 @@ void&nbsp;setPIDCoefficients(int&nbsp;motor,
 <pre>void&nbsp;setMotorTargetPosition(int&nbsp;motor,
                             int&nbsp;position,
                             int&nbsp;tolerance)</pre>
-<div class="block">Sets the target position and tolerance for a 'run to position' operation.</div>
+<div class="block">Sets the mode position and tolerance for a 'run to position' operation.</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>motor</code> - the motor number to be affected</dd>
-<dd><code>position</code> - the desired target position, in encoder ticks</dd>
-<dd><code>tolerance</code> - the tolerance of the desired target position, in encoder ticks</dd>
+<dd><code>position</code> - the desired mode position, in encoder ticks</dd>
+<dd><code>tolerance</code> - the tolerance of the desired mode position, in encoder ticks</dd>
 </dl>
 </li>
 </ul>
@@ -524,8 +524,8 @@ void&nbsp;setPIDCoefficients(int&nbsp;motor,
 <li><a href="../../../../com/qualcomm/robotcore/hardware/DcMotorEx.html" title="interface in com.qualcomm.robotcore.hardware"><span class="typeNameLink">Next&nbsp;Class</span></a></li>
 </ul>
 <ul class="navList">
-<li><a href="../../../../index.html?com/qualcomm/robotcore/hardware/DcMotorControllerEx.html" target="_top">Frames</a></li>
-<li><a href="DcMotorControllerEx.html" target="_top">No&nbsp;Frames</a></li>
+<li><a href="../../../../index.html?com/qualcomm/robotcore/hardware/DcMotorControllerEx.html" mode="_top">Frames</a></li>
+<li><a href="DcMotorControllerEx.html" mode="_top">No&nbsp;Frames</a></li>
 </ul>
 <ul class="navList" id="allclasses_navbar_bottom">
 <li><a href="../../../../allclasses-noframe.html">All&nbsp;Classes</a></li>

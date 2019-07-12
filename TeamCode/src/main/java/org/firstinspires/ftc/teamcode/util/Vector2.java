@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.util;
 
+import java.util.Locale;
+
 // Represents a 2 dimensional vector with x and y axises
 // Once instantiated, the vector is immutable
 // Therefore, it is safe to assign the vector to multiple variables without the possibility of changes to one variable affecting them all
@@ -161,6 +163,10 @@ public class Vector2 {
 
     @Override
     public String toString() {
-        return String.format("(%f, %f) (%f @ %6.1f°)", getX(), getY(), getMagnitude(), getRotation());
+        return String.format(Locale.getDefault(), "(%f,%f,%f@%.0f°)", getX(), getY(), getMagnitude(), getRotation());
+    }
+
+    public String toString(String componentFormat) {
+        return String.format("(" + componentFormat + "," + componentFormat + "," + componentFormat + "@%.0f°)", getX(), getY(), getMagnitude(), getRotation());
     }
 }

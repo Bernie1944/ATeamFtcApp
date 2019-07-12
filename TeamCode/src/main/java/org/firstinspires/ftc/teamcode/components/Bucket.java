@@ -1,318 +1,252 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.teamcode.util.Degrees;
 import org.firstinspires.ftc.teamcode.util.DoubleMap;
-import org.firstinspires.ftc.teamcode.util.Inches;
 import org.firstinspires.ftc.teamcode.util.Vector2;
 
-// Represents bucket
 public class Bucket extends Component {
-    private static final String PIVOT_SHAFT_MOTOR_NAME = "BucketPivotShaft";
-    private static final String SLIDE_MOTOR_NAME = "BucketSlide";
+    private static final String LEFT_SLIDE_MOTOR_NAME = "BucketLeftSlide";
+    private static final String RIGHT_SLIDE_MOTOR_NAME = "BucketRightSlide";
+    private static final String PIVOT_MOTOR_NAME = "BucketPivotAndLatchDrive";
     private static final String TENSIONER_MOTOR_NAME = "BucketTensioner";
-
-    // In revolutions
-    private static final double PIVOT_SHAFT_TRAVEL = 18.5;
-
-    // Between [0, 1]
-    private static final double PIVOT_SHAFT_POWER_DEADZONE = 0.07;
 
     // In inches of spool
     private static final double SLIDE_PULLEY_DIAMETER = 3.35;
 
-    // In inches of slide starting perpendicularly-to-slide below pivot and going forward parallel to slide to approximate center of bucket
-    private static final double INITIAL_SLIDE_POSITION = -3.3;
-    private static final double MIN_SLIDE_POSITION = -64.25;
-    private static final double MAX_SLIDE_POSITION = 56.5;
+    // In inches of slide starting perpendicularly-to-slide below pivot and going forward parallel to slide to approximate center of bucket dumping position
+    private static final double INITIAL_SLIDE_POSITION = -3.8; //-3.3;
+    private static final double MIN_SLIDE_POSITION = -62.5; //-61.0; //-60.0; //-63.5; //-63.9;
+    private static final double MAX_SLIDE_POSITION = 54.6;
+    private static final double GROUND_HEIGHT_MIN_SLIDE_POSITION = 23.4;
+    public static final double MINERAL_DELIVERY_HEIGHT_MAX_SLIDE_POSITION = -36.0; //-29.5; //-28.8; //-34.2;
+    public static final double MIN_UNEXTENDED_SLIDE_POSITION = -13.0;
+    public static final double OPEN_BUCKET_FOR_MINERAL_PICKUP_MIN_SLIDE_POSITION = 2.0; //8.0;
+    public static final double MAX_UNEXTENDED_SLIDE_POSITION = 10.0; //8.0;
+    public static final double MINERAL_PICKUP_MIN_SLIDE_POSITION = 13.0;
 
     // Between [0, 1]
     private static final double SLIDE_POWER_DEADZONE = 0.09;
 
-    private static final double MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD = 0.25;
-
-    private static final double MAX_SLIDE_POWER_MAGNITUDE_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION = 0.1;
-    private static final double MAX_SLIDE_SPEED_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION = 0.5;
+    // In revolutions
+    private static final double PIVOT_MOTOR_TRAVEL = 3.175;
 
     // In revolutions
-    private static final double TENSIONER_TRAVEL = 0.5;
+    private static final double TENSIONER_TRAVEL = 0.32; //0.33; //0.34; //0.4; //0.32; //0.34; //0.35; //0.32; //0.3;
+
+    // Less than 0
+    private static final double INITIAL_TENSIONER_POSITION = -0.1;
 
     // In inches from ground and center of robot to arm pivot with y-axis vertical
     private static final Vector2 PIVOT_POSITION = new Vector2(6.93, 16.9);
 
-    // In inches from slide pivot to bucket measured perpendicular to slide
-    private static final double BUCKET_DISTANCE_BELOW_ARM_PIVOT = 8.0;
-
     // Height above ground the bucket should be at when delivering minerals into lander
-    // This only affects the slide's position, not the pivotShaft's position
-    private static final double LANDER_DELIVERY_HEIGHT = 34.0;
+    private static final double MINERAL_DELIVERY_HEIGHT = 34.0;
 
-    // Converts the slides position into the target position for the pivotShaft that will either
-    // place the bucket on the ground (if bucket is in front of the robot) or will raise bucket to height for delivering minerals into lander
-    private static final DoubleMap SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP = createSlidePositionToPivotShaftPositionMap();
+    // Converts the slide position into a tensioner position that will be used to place the bucket on the crater berm/ground
+    private static final DoubleMap SLIDE_POSITION_TO_TENSIONER_POSITION_MAP = createSlidePositionToTensionerPositionMap();
 
-    private static final double MAX_SLIDE_POSITION_FOR_DUMPING_MINERALS = -30.0;
-    private static final double MIN_SLIDE_POSITION_FOR_SCOOPING_MINERALS = 16.0;
+    // Converts the degrees between the nav heading and the line tangent to the crater berms (the crater berms are close to a straight line)
+    // into a pivot position that will be used to place the bucket on the crater berm
+    private static final DoubleMap NAV_HEADING_FROM_CRATER_BERM_TO_PIVOT_POSITION_MAP = createNavHeadingFromCraterBermToPivotPositionMap();
 
-    // Position between [0, 1] with 0.0 being the initial stored position
-    public final Motor pivotShaft;
+    // Converts the slide position into a pivot position that will be used to place the bucket on the ground or hold it to the height for delivering minerals into lander
+    private static final DoubleMap SLIDE_POSITION_TO_PIVOT_POSITION_MAP = createSlidePositionToPivotPositionMap();
+
+    // In seconds
+    private static final double SLIDE_POSITION_LATENCY_CORRECTION = 0.25; //0.2; //0.4; //0.5; //0.3;
+
+    // Between [0, 1]
+    private static final double IS_ON_GROUND_SLIDE_POSITION_TO_PIVOT_POSITION_AMOUNT_GREATER_THAN_NAV_HEADING_FROM_CRATER_BERM_TO_PIVOT_POSITION_THRESHOLD = 0.1;
 
     // Position in inches starting with bucket below pivot and going forward
-    // If slide is set to drive backwards, tensioner's target position will be set to 1.0 (full tension)
-    public final SlideMotor slide;
+    public final Motor leftSlide;
+    public final Motor rightSlide;
 
-    // Position between [0, 1] with 1.0 being fully taunt
-    // If slide is set to drive backwards, any attempt to set tensioner's power, braking, target velocity, or target position will be ignored
-    // and tensioner's target position will remain at 1.0 (full tension)
-    public final TensionerMotor tensioner;
+    // Position between [0, 1] with 0.0 being the initial, stored position and 1.0 pulling the pivot fully forward
+    public final Motor pivot;
 
-    public class SlideMotor extends Motor {
-        private SlideMotor(Telemetry telemetry, HardwareMap hardwareMap) {
-            super(
-                    telemetry, hardwareMap, SLIDE_MOTOR_NAME, -SLIDE_PULLEY_DIAMETER * Math.PI, SLIDE_POWER_DEADZONE,
-                    INITIAL_SLIDE_POSITION, MIN_SLIDE_POSITION, MAX_SLIDE_POSITION
-            );
-        }
+    // Position between [0, 1] with 0.0 being the fully slack position and 1.0 being the initial position that pulls the bucket fully closed
+    public final Motor tensioner;
 
-        @Override
-        public void setPower(double power) {
-            if (power < -Double.MIN_NORMAL && !isPositionAtMin()) {
-                tensioner.setTargetPosition(1.0);
+    // Bucket needs access to Nav and Latch
+    private final Nav nav;
+    private final Latch latch;
 
-                if (tensioner.isPositionAtMax()) {
-                    super.setPower(power);
-                } else {
-                    super.setPower(-MAX_SLIDE_POWER_MAGNITUDE_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION);
-                }
-            } else if (power > Double.MIN_NORMAL && !isPositionAtMax()) {
-                if (tensioner.getTargetPosition() < MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) {
-                    tensioner.setTargetPosition(MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD);
-                }
+    private static DoubleMap createNavHeadingFromCraterBermToPivotPositionMap() {
+        DoubleMap map = new DoubleMap();
 
-                if (tensioner.isPositionAt(MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) ||
-                        tensioner.getPosition() > MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) {
-                    super.setPower(power);
-                } else {
-                    super.setPower(MAX_SLIDE_POWER_MAGNITUDE_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION);
-                }
-            } else {
-                super.setPower(power);
-            }
-        }
-
-        @Override
-        public void setTargetVelocity(double targetVelocity) {
-            if (targetVelocity < -Double.MIN_NORMAL && !isPositionAtMin()) {
-                tensioner.setTargetPosition(1.0);
-
-                if (tensioner.isPositionAtMax()) {
-                    super.setTargetVelocity(targetVelocity);
-                } else {
-                    super.setTargetVelocity(-MAX_SLIDE_SPEED_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION);
-                }
-            } else if (targetVelocity > Double.MIN_NORMAL && !isPositionAtMax()) {
-                if (tensioner.getTargetPosition() < MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) {
-                    tensioner.setTargetPosition(MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD);
-                }
-
-                if (tensioner.isPositionAt(MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) ||
-                        tensioner.getPosition() > MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) {
-                    super.setTargetVelocity(targetVelocity);
-                } else {
-                    super.setTargetVelocity(MAX_SLIDE_SPEED_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION);
-                }
-            } else {
-                super.setTargetVelocity(targetVelocity);
-            }
-        }
-
-        @Override
-        public void setTargetPosition(double targetPosition, double maxSpeedTowardsTargetPosition) {
-            if (targetPosition < slide.getPosition() && !slide.isPositionAt(targetPosition)) {
-                tensioner.setTargetPosition(1.0);
-
-                if (tensioner.isPositionAtMax()) {
-                    super.setTargetPosition(targetPosition, maxSpeedTowardsTargetPosition);
-                } else {
-                    super.setTargetPosition(targetPosition, MAX_SLIDE_SPEED_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION);
-                }
-            } else if (targetPosition > slide.getPosition() && !slide.isPositionAt(targetPosition)) {
-                if (tensioner.getTargetPosition() < MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) {
-                    tensioner.setTargetPosition(MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD);
-                }
-
-                if (tensioner.isPositionAt(MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) ||
-                        tensioner.getPosition() > MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) {
-                    super.setTargetPosition(targetPosition, maxSpeedTowardsTargetPosition);
-                } else {
-                    super.setTargetPosition(targetPosition, MAX_SLIDE_SPEED_WHILE_TENSIONER_MOVING_TO_ALLOWED_POSITION);
-                }
-            } else {
-                super.setTargetPosition(targetPosition, maxSpeedTowardsTargetPosition);
-            }
-        }
+        map.put(0.0, 0.72); //0.74); //0.75);
+        map.put(45.0, 0.6);
+        map.put(55.0, 0.58); //0.59);
+        return map;
     }
 
-    public class TensionerMotor extends Motor {
-        private TensionerMotor(Telemetry telemetry, HardwareMap hardwareMap) {
-            super(
-                    telemetry, hardwareMap, TENSIONER_MOTOR_NAME, 1.0 / TENSIONER_TRAVEL, 0.0,
-                    1.0, 0.0, 1.0
-            );
-        }
-
-        @Override
-        public void setPower(double power) {
-            if (!slide.isDriving()) {
-                super.setPower(power);
-            }
-        }
-
-        @Override
-        public void brake() {
-            if (!slide.isDriving()) {
-                super.brake();
-            }
-        }
-
-        @Override
-        public void setTargetVelocity(double targetVelocity) {
-            if (!slide.isDriving()) {
-                super.setTargetVelocity(targetVelocity);
-            }
-        }
-
-        @Override
-        public void setTargetPosition(double targetPosition, double maxSpeedTowardsTargetPosition) {
-            if (slide.isDrivingBackward()) {
-                targetPosition = 1.0;
-            } else if (slide.isDrivingForward() && targetPosition < MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD) {
-                targetPosition = MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD;
-            }
-
-            if ((slide.isDrivingBackward() && !isPositionAtMax()) ||
-                    (slide.isDrivingForward() && getPosition() < MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD &&
-                            !isPositionAt(MIN_TENSIONER_POSITION_WHILE_SLIDE_SLIDE_MOVING_FORWARD))
-            ) {
-                super.setTargetPosition(targetPosition, Double.POSITIVE_INFINITY);
-            } else {
-                super.setTargetPosition(targetPosition, maxSpeedTowardsTargetPosition);
-            }
-        }
-    }
-
-    private static DoubleMap createSlidePositionToPivotShaftPositionMap() {
+    private static DoubleMap createSlidePositionToPivotPositionMap() {
         DoubleMap map = new DoubleMap();
 
         // For mineral dump height
-        map.put(-63.721, 0.674);
-        map.put(-52.990, 0.714);
-        map.put(-46.111, 0.767);
-        map.put(-38.668, 0.839);
-        map.put(-31.020, 1.000);
+        map.put(-62.5, 0.76); //0.75); //0.74); //0.76);
+        map.put(-58.0, 0.77); //0.76); //0.78); //0.79);
+        map.put(-50.0, 0.80); //0.79); //0.8);
+        map.put(-42.0, 0.85); //0.84); //0.85);
+        map.put(-36.0, 0.90); //0.89); //0.85);
+        //map.put(MINERAL_DELIVERY_HEIGHT_MAX_SLIDE_POSITION, 1.0);
 
         // For mineral scoop height
-        map.put(16.583, 0.649);
-        map.put(20.399, 0.669);
-        map.put(22.184, 0.664);
-        map.put(25.567, 0.576);
-        map.put(28.329, 0.510);
-        map.put(31.036, 0.480);
-        map.put(33.930, 0.453);
-        map.put(36.993, 0.426);
-        map.put(40.883, 0.391);
-        map.put(44.435, 0.372);
-        map.put(47.696, 0.349);
-        map.put(50.788, 0.340);
-        map.put(52.498, 0.327);
-        map.put(56.388, 0.303);
+        //map.put(19.2, 0.68);
+        map.put(19.5, 1.0);
+        map.put(23.4, 0.74); //0.76);
+        map.put(54.6, 0.5); //0.57);
 
         return map;
     }
 
-    public Bucket(Telemetry telemetry, HardwareMap hardwareMap) {
+    private static DoubleMap createSlidePositionToTensionerPositionMap() {
+        DoubleMap map = new DoubleMap();
+
+        map.put(30.0, 0.22);
+        map.put(MAX_SLIDE_POSITION, 0.0);
+        return map;
+    }
+
+    public Bucket(Telemetry telemetry, HardwareMap hardwareMap, Nav nav, Latch latch) {
         super(telemetry, hardwareMap);
 
-        pivotShaft = new Motor(
-                telemetry, hardwareMap, PIVOT_SHAFT_MOTOR_NAME, 1.0 / PIVOT_SHAFT_TRAVEL, PIVOT_SHAFT_POWER_DEADZONE,
+        this.nav = nav;
+        this.latch = latch;
+
+        leftSlide = new Motor(
+                telemetry, hardwareMap, LEFT_SLIDE_MOTOR_NAME, "%.2fin", -SLIDE_PULLEY_DIAMETER * Math.PI, SLIDE_POWER_DEADZONE,
+                INITIAL_SLIDE_POSITION, MIN_SLIDE_POSITION, MAX_SLIDE_POSITION
+        );
+
+        rightSlide = new Motor(
+                telemetry, hardwareMap, RIGHT_SLIDE_MOTOR_NAME, "%.2fin", SLIDE_PULLEY_DIAMETER * Math.PI, SLIDE_POWER_DEADZONE,
+                INITIAL_SLIDE_POSITION, MIN_SLIDE_POSITION, MAX_SLIDE_POSITION
+        );
+
+        pivot = new Motor(
+                telemetry, hardwareMap, PIVOT_MOTOR_NAME, "%.2f", 1.0 / PIVOT_MOTOR_TRAVEL, 0.0,
                 0.0, 0.0, 1.0
         );
 
-        slide = new SlideMotor(telemetry, hardwareMap);
-        tensioner = new TensionerMotor(telemetry, hardwareMap);
+        tensioner = new Motor(
+                telemetry, hardwareMap, TENSIONER_MOTOR_NAME, "%.2f", 1.0 / TENSIONER_TRAVEL, 0.0,
+                INITIAL_TENSIONER_POSITION, 0.0, 1.0
+        );
+    }
+
+    // In inches relative to the nav with positive towards front of the robot
+    // Assumes pivot is at the target position of setPivotTargetPosition()
+    public static double convertSlidePositionToRelativePosition(double slidePosition) {
+        // Rough estimate of y position as if slide is at target position after calling setPivotTargetPosition()
+        double estimatedHeight = Range.clip(
+                Range.scale(
+                        slidePosition,
+                        MINERAL_DELIVERY_HEIGHT_MAX_SLIDE_POSITION, GROUND_HEIGHT_MIN_SLIDE_POSITION,
+                        MINERAL_DELIVERY_HEIGHT, 0.0),
+                0.0, MINERAL_DELIVERY_HEIGHT
+        );
+
+        double horizontalDistanceFromSlidePivot = Math.sqrt(Math.pow(slidePosition, 2) - Math.pow(estimatedHeight - PIVOT_POSITION.getY(), 2));
+        if (Double.isNaN(horizontalDistanceFromSlidePivot)) horizontalDistanceFromSlidePivot = 0.0;
+
+        return (slidePosition < 0.0 ? -horizontalDistanceFromSlidePivot : horizontalDistanceFromSlidePivot) + PIVOT_POSITION.getX();
+    }
+
+    public static double convertRelativePositionToSlidePosition(double relativePosition) {
+        // Rough estimate of y position as if slide is at target position after calling setPivotTargetPosition()
+        double estimatedHeight = Range.clip(
+                Range.scale(
+                        relativePosition,
+                        convertSlidePositionToRelativePosition(MINERAL_DELIVERY_HEIGHT_MAX_SLIDE_POSITION),
+                        convertSlidePositionToRelativePosition(GROUND_HEIGHT_MIN_SLIDE_POSITION),
+                        MINERAL_DELIVERY_HEIGHT, 0.0),
+                0.0, MINERAL_DELIVERY_HEIGHT
+        );
+
+        double absSlidePosition = new Vector2(relativePosition, estimatedHeight).sub(PIVOT_POSITION).getMagnitude();
+
+        return relativePosition < PIVOT_POSITION.getX() ? -absSlidePosition : absSlidePosition;
     }
 
     // In inches starting with bucket below pivot and going forward
-    public double getMaxSlidePositionForDumpingMinerals() {
-        return MAX_SLIDE_POSITION_FOR_DUMPING_MINERALS;
+    // Same as leftSlide.getPosition() but with latency correction applied
+    public double getSlidePosition() {
+        return leftSlide.getPosition() + (leftSlide.getVelocity() * SLIDE_POSITION_LATENCY_CORRECTION);
     }
 
-    // In inches starting with bucket below pivot and going forward
-    public double getMinSlidePositionForScoopingMinerals() {
-        return MIN_SLIDE_POSITION_FOR_SCOOPING_MINERALS;
+    // In inches relative to the nav with positive towards front of the robot
+    // Assumes pivot is at the target position of setPivotTargetPosition()
+    public double getRelativePosition() {
+        return convertSlidePositionToRelativePosition(getSlidePosition());
     }
 
-    // See correctYPosition()
-    public boolean isYPositionCorrect() {
-        return pivotShaft.isPositionAt(SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP.get(slide.getPosition()));
+    // In inches relative to center of playing field with positive x-axis to the right of the driving team and positive y-axis to the front of the driving team
+    public Vector2 getPosition() {
+        return new Vector2(getRelativePosition(), 0.0).addRotation(nav.getHeading()).add(nav.getPosition());
     }
 
-    // In inches as if isYPositionCorrect() returns true
-    public double getXPositionForCorrectYPosition() {
-        double correctYPosition = slide.getPosition() < 0.0 ? LANDER_DELIVERY_HEIGHT : 0.0;
-
-        double xDistanceFromSlidePivot = Math.sqrt(Math.pow(slide.getPosition(), 2) - Math.pow(correctYPosition - PIVOT_POSITION.getY(), 2));
-        if (Double.isNaN(xDistanceFromSlidePivot)) xDistanceFromSlidePivot = 0.0;
-
-        return (slide.getPosition() < 0.0 ? -xDistanceFromSlidePivot : xDistanceFromSlidePivot) + PIVOT_POSITION.getX();
+    // Is bucket resting on ground?
+    public boolean isOnGround() {
+        return getSlidePosition() > MAX_UNEXTENDED_SLIDE_POSITION &&
+                SLIDE_POSITION_TO_PIVOT_POSITION_MAP.get(getSlidePosition()) - NAV_HEADING_FROM_CRATER_BERM_TO_PIVOT_POSITION_MAP.get(getNavHeadingFromCraterBerm()) <
+                        IS_ON_GROUND_SLIDE_POSITION_TO_PIVOT_POSITION_AMOUNT_GREATER_THAN_NAV_HEADING_FROM_CRATER_BERM_TO_PIVOT_POSITION_THRESHOLD;
     }
 
-    // Target y position is inferred from slide's position (See SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP)
-    // Returns [0, 1]
-    // 0.0 indicates y-position is far enough below target y-position that slide should not move
-    // 1.0 indicates y-position is high enough that slide movement should not be reduced
-    public void correctYPosition() {
-        pivotShaft.setTargetPosition(SLIDE_POSITION_TO_PIVOT_SHAFT_POSITION_MAP.get(slide.getPosition()));
+    // Calculate the degrees between the nav heading and the line tangent to the crater berms (the crater berms are close to a straight line)
+    private double getNavHeadingFromCraterBerm() {
+        double navHeadingFromCraterBerm = Degrees.between(nav.getHeading(), 45.0);
+        if (navHeadingFromCraterBerm > 90.0) navHeadingFromCraterBerm = 180.0 - navHeadingFromCraterBerm;
+        return navHeadingFromCraterBerm;
+    }
+
+    // Pivot target position is inferred from getSlidePosition() and nav heading so that bucket is
+    // held to height for delivering minerals into lander, placed along the crater berm, or placed on the ground
+    public void setPivotTargetPosition() {
+        if (latch.getCatchEngagementAmount() > 0.0) {
+            latch.disengage();
+        } else if (getSlidePosition() < MIN_UNEXTENDED_SLIDE_POSITION) {
+            pivot.setTargetPosition(SLIDE_POSITION_TO_PIVOT_POSITION_MAP.get(getSlidePosition()));
+        } else {
+            pivot.setTargetPosition(Math.min(
+                    NAV_HEADING_FROM_CRATER_BERM_TO_PIVOT_POSITION_MAP.get(getNavHeadingFromCraterBerm()),
+                    SLIDE_POSITION_TO_PIVOT_POSITION_MAP.get(getSlidePosition())
+            ));
+        }
+    }
+
+    // Tensioner target position is inferred from getSlidePosition() and nav heading so that bucket is
+    // placed on the crater berm or ground when in front of the robot or is otherwise closed
+    public void setTensionerTargetPosition() {
+        if (getSlidePosition() < OPEN_BUCKET_FOR_MINERAL_PICKUP_MIN_SLIDE_POSITION) {
+            tensioner.setTargetPosition(tensioner.getMaxPosition());
+        } else if (isOnGround()){
+            tensioner.setTargetPosition(SLIDE_POSITION_TO_TENSIONER_POSITION_MAP.get(getSlidePosition()));
+        } else {
+            tensioner.setTargetPosition(tensioner.getMinPosition());
+        }
     }
 
     // Called through Component.update()
     @Override
-    void updateImpl() {
-        pivotShaft.update();
-        slide.update();
+    void internalUpdate() {
+        leftSlide.update();
+        rightSlide.update();
+        pivot.update();
         tensioner.update();
     }
 
-    // Returns text describing state
     @Override
     public String toString() {
-        return "yPositionCorrect : " + Boolean.toString(isYPositionCorrect()) + "\n" +
-                "xPositionForCorrectYPosition : " + Inches.toString(getXPositionForCorrectYPosition()) + "\n" +
-                "pivotShaft {\n" +
-                pivotShaft.toString() + "\n" +
-                "}\n" +
-                "slide {\n" +
-                slide.toString() + "\n" +
-                "}\n" +
-                "tensioner {\n" +
-                tensioner.toString() + "\n" +
-                "}";
-    }
-
-    // Returns text verbosely describing state
-    @Override
-    public String toStringVerbose() {
-        return "yPositionCorrect : " + Boolean.toString(isYPositionCorrect()) + "\n" +
-                "xPositionForCorrectYPosition : " + Inches.toString(getXPositionForCorrectYPosition()) + "\n" +
-                "pivotShaft {\n" +
-                pivotShaft.toStringVerbose() + "\n" +
-                "}\n" +
-                "slide {\n" +
-                slide.toStringVerbose() + "\n" +
-                "}\n" +
-                "tensioner {\n" +
-                tensioner.toStringVerbose() + "\n" +
-                "}";
+        return createStateString("slidePosition", "%.2fin", getSlidePosition()) +
+                createStateString("relativePosition", "%.2fin", getRelativePosition()) +
+                createStateString("position", getPosition().toString("%.2fin")) +
+                createStateString("onGround", isOnGround()) +
+                leftSlide.toString() + rightSlide.toString() + pivot.toString() + tensioner.toString();
     }
 }

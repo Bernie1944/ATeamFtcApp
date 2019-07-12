@@ -1,11 +1,9 @@
 package org.firstinspires.ftc.teamcode.util;
 
+import java.util.Locale;
+
 // Collection of static functions to help working with degrees
 public final class Degrees {
-    public static String toString(double n) {
-        return String.format("%10.1f°", n);
-    }
-
     public static double fromRadians(double radians) {
         return Math.toDegrees(radians);
     }
@@ -45,6 +43,11 @@ public final class Degrees {
     // Unwraps degrees so that they are between [-180, 180]
     public static double normalize(double degrees) {
         return atan2(sin(degrees), cos(degrees));
+    }
+
+    // Returns positive degrees between [0, 180]
+    public static double between(double degrees1, double degrees2) {
+        return Math.abs(normalize(degrees1 - degrees2));
     }
 
     // Keep class from being instantiated
